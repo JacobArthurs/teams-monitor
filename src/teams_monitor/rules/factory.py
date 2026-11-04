@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import timedelta
 
 from teams_monitor.health import HealthState
@@ -16,12 +15,11 @@ from teams_monitor.rules.teams_down import TeamsDownRule
 def build_default_rules(
     health: HealthState,
     suppress_after_missed: timedelta,
-    in_active_hours: Callable[[], bool],
 ) -> list[Rule]:
     missed_calls = MissedCallRule()
     return [
         IncomingCallRule(),
         missed_calls,
         NewMessageRule(lambda: missed_calls.last_missed_at, suppress_after_missed),
-        TeamsDownRule(health, in_active_hours),
+        TeamsDownRule(health),
     ]

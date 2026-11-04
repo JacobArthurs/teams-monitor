@@ -32,7 +32,7 @@ class AlertKind(str, Enum):
 class LogLine:
     """One parsed Teams log line."""
 
-    raw_ts: str
+    log_ts: str  # the line's time in local time, or its original text if that is invalid
     ts: datetime | None
     thread: str
     level: str

@@ -37,13 +37,10 @@ def new_message(unread: int, presence: str, log_ts: str) -> Alert:
     )
 
 
-def teams_down(reason: str, log_ts: str | None = None) -> Alert:
-    fields: dict[str, object] = {"reason": reason}
-    if log_ts is not None:
-        fields["log_ts"] = log_ts
+def teams_down(reason: str) -> Alert:
     return Alert(
         AlertKind.TEAMS_DOWN,
         PRIORITY_TEAMS_DOWN,
         f"Teams down: {reason}",
-        fields,
+        {"reason": reason},
     )

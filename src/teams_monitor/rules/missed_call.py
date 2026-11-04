@@ -45,5 +45,5 @@ class MissedCallRule(Rule):
         elif signal is SignalName.CALL_ENDED and call_id in self._ringing:
             self._ringing.discard(call_id)
             self._last_missed_at = event.line.ts
-            return [alerts.missed_call(call_id, event.line.raw_ts)]
+            return [alerts.missed_call(call_id, event.line.log_ts)]
         return []

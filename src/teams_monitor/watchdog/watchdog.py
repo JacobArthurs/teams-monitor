@@ -48,6 +48,8 @@ class Watchdog:
     def _down_reason(self) -> str | None:
         if self._probe is not None and self._probe.is_running() is False:
             return "Teams process is not running"
+        if self._health.take_tray_removed():
+            return "tray icon removed"
         idle = self._activity.idle_seconds()
         if idle > self._stale_after:
             if self._activity.format_suspect:

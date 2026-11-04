@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from teams_monitor.models import LogLine
 
@@ -17,8 +17,9 @@ _LINE = re.compile(
 
 
 def parse_timestamp(value: str) -> datetime | None:
+    """Teams writes UTC clock time but labels it with the local offset, so the label is ignored."""
     try:
-        return datetime.fromisoformat(value)
+        return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
     except ValueError:
         return None
 
@@ -33,10 +34,10 @@ class LineParser:
         found = _LINE.match(raw[: self._max_length])
         if found is None:
             return None
-        ts = found["ts"]
+        ts = parse_timestamp(found["ts"])
         return LogLine(
-            raw_ts=ts,
-            ts=parse_timestamp(ts),
+            log_ts=ts.astimezone().isoformat() if ts else found["ts"],
+            ts=ts,
             thread=found["thread"],
             level=found["level"],
             msg=found["msg"],

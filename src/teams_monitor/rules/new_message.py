@@ -40,7 +40,7 @@ class NewMessageRule(Rule):
             return []
         if self._is_suppressed(event.line.ts):
             return []
-        return [alerts.new_message(unread, event.groups["presence"], event.line.raw_ts)]
+        return [alerts.new_message(unread, event.groups["presence"], event.line.log_ts)]
 
     def _is_suppressed(self, ts: datetime | None) -> bool:
         missed_at = self._last_missed_at()

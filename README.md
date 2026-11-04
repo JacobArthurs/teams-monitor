@@ -80,7 +80,7 @@ python -m teams_monitor --config C:\path\to\config.toml
 | Incoming call | 1 | A call starts ringing |
 | Missed call | 2 | A ringing call ends without being answered |
 | New message | 3 | The taskbar unread count rises |
-| Teams down | 4 | The tray icon is removed, `ms-teams.exe` isn't running, or the log has no line in the expected format for `stale_minutes` |
+| Teams down | 4 | The tray icon is removed and not re-added within 5 seconds, `ms-teams.exe` isn't running, or the log has no line in the expected format for `stale_minutes` |
 
 ### Limitations
 
@@ -126,9 +126,9 @@ Alerts are sent as JSON. Slack-style webhooks read `text`, and Discord reads `co
   "text": "[Teams] Incoming call",
   "content": "[Teams] Incoming call",
   "host": "MY-PC",
-  "sent_at": "2026-10-13T17:41:20-04:00",
+  "sent_at": "2026-10-13T13:41:20-04:00",
   "call_id": "13e25d06-3814-4a7f-afbd-109d3c013a6a",
-  "log_ts": "2026-10-13T17:41:20.566372-04:00"
+  "log_ts": "2026-10-13T13:41:20.566372-04:00"
 }
 ```
 
@@ -138,7 +138,7 @@ Each alert type adds its own fields:
 | ----- | ----------------- |
 | `incoming_call`, `missed_call` | `call_id`, `log_ts` |
 | `new_message` | `unread`, `presence`, `log_ts` |
-| `teams_down` | `reason`, and `log_ts` when a log line triggered it |
+| `teams_down` | `reason` |
 
 ### Retries and Failures
 

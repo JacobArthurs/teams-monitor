@@ -11,4 +11,4 @@ class IncomingCallRule(Rule):
     handles = frozenset({SignalName.CALL_INCOMING})
 
     def on_event(self, event: Event) -> list[Alert]:
-        return [alerts.incoming_call(event.groups["call_id"], event.line.raw_ts)]
+        return [alerts.incoming_call(event.groups["call_id"], event.line.log_ts)]

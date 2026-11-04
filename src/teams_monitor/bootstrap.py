@@ -63,20 +63,12 @@ def build_monitor(
     if not settings.log_dir.is_dir():
         log.warning("Teams log folder not found: %s. Check [teams] log_dir.", settings.log_dir)
 
-    window = settings.active_window
-    now = clock.now
-
-    def in_active_hours() -> bool:
-        return window is None or window.contains(now().time())
-
     health = HealthState(clock)
     activity = ActivityTracker(clock)
     engine = Engine(
         LineParser(),
         SignalMatcher(),
-        build_default_rules(
-            health, timedelta(seconds=settings.suppress_after_missed), in_active_hours
-        ),
+        build_default_rules(health, timedelta(seconds=settings.suppress_after_missed)),
     )
     tailer = LogTailer(LogLocator(settings.log_dir), LineReader(), settings.from_start)
     watchdog = Watchdog(
