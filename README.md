@@ -79,7 +79,7 @@ python -m teams_monitor --config C:\path\to\config.toml
 | ----- | -------- | ---------- |
 | Incoming call | 1 | A call starts ringing |
 | Missed call | 2 | A ringing call ends without being answered |
-| New message | 3 | The taskbar unread count rises |
+| New message | 3 | The taskbar unread count rises and is still up 2 seconds later |
 | Teams down | 4 | The tray icon is removed and not re-added within 5 seconds, `ms-teams.exe` isn't running, or the log has no line in the expected format for `stale_minutes` |
 
 ### Limitations

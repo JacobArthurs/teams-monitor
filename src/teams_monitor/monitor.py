@@ -51,6 +51,7 @@ class Monitor:
         lines = self._tailer.poll()
         if lines:
             self._process(lines)
+        self._dispatch(self._engine.tick())
 
         now = self._clock.monotonic()
         if now - self._last_check >= self._check_interval:

@@ -20,6 +20,7 @@ class Engine:
     ) -> None:
         self._parser = parser
         self._matcher = matcher
+        self._rules = rules
         self._routes: dict[SignalName, list[Rule]] = defaultdict(list)
         for rule in rules:
             for name in rule.handles:
@@ -38,3 +39,7 @@ class Engine:
         for rule in self._routes.get(event.signal, ()):
             alerts.extend(rule.on_event(event))
         return alerts
+
+    def tick(self) -> list[Alert]:
+        """Collect alerts from rules that were waiting for time to pass."""
+        return [alert for rule in self._rules for alert in rule.on_tick()]

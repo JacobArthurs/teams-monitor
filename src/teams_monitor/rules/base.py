@@ -14,3 +14,7 @@ class Rule(ABC):
     @abstractmethod
     def on_event(self, event: Event) -> list[Alert]:
         """Handle one event. Only events for signals in `handles` are delivered."""
+
+    def on_tick(self) -> list[Alert]:
+        """Called after each poll, for rules that alert once time has passed."""
+        return []

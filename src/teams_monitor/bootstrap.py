@@ -68,7 +68,7 @@ def build_monitor(
     engine = Engine(
         LineParser(),
         SignalMatcher(),
-        build_default_rules(health, timedelta(seconds=settings.suppress_after_missed)),
+        build_default_rules(health, timedelta(seconds=settings.suppress_after_missed), clock),
     )
     tailer = LogTailer(LogLocator(settings.log_dir), LineReader(), settings.from_start)
     watchdog = Watchdog(
