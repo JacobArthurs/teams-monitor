@@ -1,0 +1,36 @@
+# Copy this file to config.toml and edit it.
+# config.toml is gitignored because it holds the webhook URL, which works like a password.
+# Every setting is optional. Omitted settings use the defaults shown here.
+
+[teams]
+# Folder containing the MSTeams_*.log files. Windows variables such as %LOCALAPPDATA% are expanded.
+# Single quotes keep the backslashes literal.
+log_dir = '%LOCALAPPDATA%\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Logs'
+# Process checked for outage detection. An empty string disables the check.
+process = "ms-teams.exe"
+
+[webhook]
+# Where alerts are sent (http or https). Empty means dry run: alerts are only logged.
+url = ""
+
+[monitoring]
+# How often the log is polled for new lines.
+poll_seconds = 0.5
+# How often the outage check runs.
+check_interval_seconds = 30
+# Alert when the log has had no line in the expected format for this many minutes.
+stale_minutes = 10
+# Local time window for all Teams down alerts, for example "08:00-18:00". Empty means always.
+# If Teams is still down when the window opens, the alert fires then.
+active_hours = ""
+# Ignore an unread count increase this soon after a missed call.
+suppress_after_missed_seconds = 3
+
+[logging]
+# Write monitor logs to this file (rotating). Empty means print to the console.
+file = ""
+verbose = false
+
+[debug]
+# Read the current log file from the beginning instead of the end. For testing.
+from_start = false

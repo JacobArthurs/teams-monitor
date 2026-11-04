@@ -1,0 +1,78 @@
+"""Command line entry point. All settings come from the config file."""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import threading
+import traceback
+from collections.abc import Sequence
+from pathlib import Path
+from typing import NoReturn
+
+from teams_monitor import __version__
+from teams_monitor.bootstrap import build_monitor
+from teams_monitor.config import ConfigError, Settings
+from teams_monitor.config_loader import load_settings
+from teams_monitor.fatal import report_without_console
+from teams_monitor.lifecycle import install_stop_handlers
+from teams_monitor.logging_setup import configure_logging
+
+log = logging.getLogger(__name__)
+
+# Relative to the working directory, so run it from the folder that holds config.toml.
+DEFAULT_CONFIG_PATH = Path("config.toml")
+
+
+class _Parser(argparse.ArgumentParser):
+    def error(self, message: str) -> NoReturn:
+        report_without_console(f"teams-monitor could not start:\n\n{message}")
+        super().error(message)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = _Parser(
+        prog="python -m teams_monitor",
+        description="Tail Microsoft Teams logs and send webhook alerts (Windows).",
+    )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=DEFAULT_CONFIG_PATH,
+        help=f"path to the config file (default: {DEFAULT_CONFIG_PATH} in the current directory)",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        settings = load_settings(args.config)
+    except ConfigError as exc:
+        parser.error(str(exc))
+
+    try:
+        configure_logging(settings.verbose, settings.log_file)
+    except OSError as exc:
+        parser.error(f"[logging] file cannot be opened: {exc}")
+
+    try:
+        _run(settings)
+    except Exception:
+        log.exception("monitor crashed")
+        report_without_console(f"teams-monitor crashed:\n\n{traceback.format_exc()}")
+        return 1
+    return 0
+
+
+def _run(settings: Settings) -> None:
+    stop = threading.Event()
+    install_stop_handlers(stop)
+
+    monitor = build_monitor(settings)
+    try:
+        monitor.run_forever(stop)
+    finally:
+        monitor.close()
