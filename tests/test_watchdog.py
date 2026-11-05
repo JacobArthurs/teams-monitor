@@ -19,9 +19,7 @@ class Rig:
         self.health = HealthState(clock)
         self.activity = ActivityTracker(clock)
         self.probe = FakeProbe(running)
-        self.watchdog = Watchdog(
-            self.health, self.activity, clock, STALE_AFTER, self.probe, window
-        )
+        self.watchdog = Watchdog(self.health, self.activity, clock, STALE_AFTER, self.probe, window)
 
     def reasons(self) -> list[str]:
         return [alert.fields["reason"] for alert in self.watchdog.check()]
@@ -83,7 +81,9 @@ def test_stale_log_alerts_only_past_the_limit(rig: Rig) -> None:
 def test_stale_log_with_unrecognized_lines_blames_the_format(rig: Rig) -> None:
     rig.activity.note_unrecognized(100)
     rig.clock.advance(STALE_AFTER + 1)
-    assert rig.reasons() == ["log lines not recognized for 10 min (the log format may have changed)"]
+    assert rig.reasons() == [
+        "log lines not recognized for 10 min (the log format may have changed)"
+    ]
 
 
 def test_process_reason_wins_over_tray_and_stale(rig: Rig) -> None:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from teams_monitor.models import LogLine
 
@@ -19,7 +19,7 @@ _LINE = re.compile(
 def parse_timestamp(value: str) -> datetime | None:
     """Teams writes UTC clock time but labels it with the local offset, so the label is ignored."""
     try:
-        return datetime.fromisoformat(value).replace(tzinfo=timezone.utc)
+        return datetime.fromisoformat(value).replace(tzinfo=UTC)
     except ValueError:
         return None
 

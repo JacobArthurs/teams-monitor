@@ -37,11 +37,15 @@ def _line(at: float, level: str, msg: str) -> str:
 
 
 def incoming(call_id: str = CALL_A, at: float = 0.0) -> str:
-    return _line(at, "INFO", f"HfpVoipCallCoordinatorImpl: reportIncomingCall for callId: {call_id}")
+    return _line(
+        at, "INFO", f"HfpVoipCallCoordinatorImpl: reportIncomingCall for callId: {call_id}"
+    )
 
 
 def answered(call_id: str = CALL_A, at: float = 0.0) -> str:
-    return _line(at, "INFO", f"HfpVoipCallCoordinatorImpl: reportCallAccepted for callId: {call_id}")
+    return _line(
+        at, "INFO", f"HfpVoipCallCoordinatorImpl: reportCallAccepted for callId: {call_id}"
+    )
 
 
 def ended(call_id: str = CALL_A, at: float = 0.0, remaining: int = 0) -> str:

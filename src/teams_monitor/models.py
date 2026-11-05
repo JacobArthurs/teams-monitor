@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 
-class SignalName(str, Enum):
+class SignalName(StrEnum):
     """Log patterns the monitor recognizes (S1 to S6)."""
 
     CALL_INCOMING = "call_incoming"
@@ -19,7 +19,7 @@ class SignalName(str, Enum):
     APP_EXITED = "app_exited"
 
 
-class AlertKind(str, Enum):
+class AlertKind(StrEnum):
     """Alerts the monitor can raise (A1 to A4)."""
 
     INCOMING_CALL = "incoming_call"

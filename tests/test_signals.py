@@ -92,9 +92,10 @@ def test_presence_with_spaces_is_captured_whole() -> None:
 
 
 def test_remaining_count_is_captured() -> None:
-    assert event(_info(f"TeamsCallTracker: Call ended: {CALL_A} (remaining: 2)")).groups[
-        "remaining"
-    ] == "2"
+    assert (
+        event(_info(f"TeamsCallTracker: Call ended: {CALL_A} (remaining: 2)")).groups["remaining"]
+        == "2"
+    )
 
 
 def test_matcher_with_no_signals_matches_nothing() -> None:
