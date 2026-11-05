@@ -47,10 +47,10 @@ Clone the repository to run it locally or edit the code:
 ```powershell
 git clone https://github.com/JacobArthurs/teams-monitor.git
 cd teams-monitor
-pip install -e .
+$env:PYTHONPATH = "src"
 ```
 
-The `-e` flag means your code changes apply without reinstalling. To upgrade later, run `git pull`, then restart the monitor.
+`PYTHONPATH` only lasts for the current terminal, and this relative path only works from the repository folder. To avoid setting it each time, run `pip install -e .` once instead. To upgrade later, run `git pull`, then restart the monitor.
 
 ## Quick Start
 
@@ -92,7 +92,7 @@ To try it without sending anything, leave `url` empty. It then runs in dry-run m
 python -m teams_monitor [--config PATH]
 ```
 
-The monitor runs until it is stopped. `teams-monitor` also works if Python's `Scripts` folder is on your `PATH`, so `python -m teams_monitor` is more reliable.
+The monitor runs until it is stopped. Once installed with pip, `teams-monitor` also works if Python's `Scripts` folder is on your `PATH`, so `python -m teams_monitor` is more reliable.
 
 | Flag | Description |
 | ---- | ----------- |
@@ -122,7 +122,6 @@ These come from what Teams writes to its log:
 - A rise in the unread count soon after a missed call is suppressed (3 seconds by default). That default is based on limited testing.
 - After a restart, the first unread count sets a new baseline, so activity that arrived while Teams was closed doesn't alert.
 - A change to the overall log line format is detected: a warning is logged after 100 unrecognized lines in a row, and a Teams down alert follows after `stale_minutes`. A change to the wording of a single message isn't detected, because it looks the same as the event never happening.
-- Signals were validated on commercial tenant logs only. GCC High (US government tenant) logs had no calls or unread items, so call and activity alerts are unconfirmed there.
 
 ## Configuration
 
