@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
 
-from teams_monitor.watchdog.window import ActiveWindow
+from teams_monitor.window import ActiveWindow
 
 DEFAULT_LOG_DIR = r"%LOCALAPPDATA%\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Logs"
 DEFAULT_PROCESS_NAME = "ms-teams.exe"

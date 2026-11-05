@@ -15,7 +15,7 @@ from teams_monitor.config import (
     ConfigError,
     Settings,
 )
-from teams_monitor.watchdog import ActiveWindow
+from teams_monitor.window import ActiveWindow
 
 # Every accepted section and key. Anything else is rejected so typos are not silently ignored.
 SCHEMA: dict[str, frozenset[str]] = {

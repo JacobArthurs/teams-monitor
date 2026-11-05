@@ -187,7 +187,8 @@ src/teams_monitor/
   alerts.py          alert constructors, owns priorities and wording
   health.py          shared up/down state so outages alert once
   tailing/           LogLocator, LineReader, LogTailer (rotation aware)
-  watchdog/          ProcessProbe, ActivityTracker, ActiveWindow, Watchdog
+  watchdog/          ProcessProbe, ActivityTracker, Watchdog
+  window.py          ActiveWindow: daily time window for outage checks
   notifiers/         Notifier ABC, webhook + retry, HTTP transport,
                      background threads, composite, log sink
   monitor.py         run loop: poll, process, dispatch, watchdog

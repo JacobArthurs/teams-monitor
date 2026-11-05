@@ -10,7 +10,7 @@ from teams_monitor.health import HealthState
 from teams_monitor.models import Alert
 from teams_monitor.watchdog.activity import ActivityTracker
 from teams_monitor.watchdog.process import ProcessProbe
-from teams_monitor.watchdog.window import ActiveWindow
+from teams_monitor.window import ActiveWindow
 
 log = logging.getLogger(__name__)
 
