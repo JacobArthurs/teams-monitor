@@ -1,9 +1,10 @@
 # teams-monitor
 
 [![ci](https://img.shields.io/github/actions/workflow/status/JacobArthurs/teams-monitor/ci.yml?branch=main)](https://github.com/JacobArthurs/teams-monitor/actions/workflows/ci.yml)
-[![python version](https://img.shields.io/badge/python-3.11%2B-blue)](./pyproject.toml)
+[![pypi](https://img.shields.io/pypi/v/teams-monitor)](https://pypi.org/project/teams-monitor/)
+[![python version](https://img.shields.io/badge/python-3.11%2B-blue)](https://github.com/JacobArthurs/teams-monitor/blob/main/pyproject.toml)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey)](#requirements)
-[![License](https://img.shields.io/github/license/JacobArthurs/teams-monitor)](LICENSE)
+[![License](https://img.shields.io/github/license/JacobArthurs/teams-monitor)](https://github.com/JacobArthurs/teams-monitor/blob/main/LICENSE)
 
 A lightweight Windows background tool that tails the Microsoft Teams log and sends webhook alerts for incoming calls, missed calls, new activity, and Teams outages.
 
@@ -31,27 +32,43 @@ Use it to get Teams alerts on your phone or in another chat tool when you're awa
 
 Commands in this README are for PowerShell.
 
-The package isn't published to PyPI, so install it from a clone of the repository:
+### From PyPI
+
+```powershell
+pip install teams-monitor
+```
+
+To upgrade later, run `pip install --upgrade teams-monitor`, then restart the monitor.
+
+### From Source
+
+Clone the repository to run it locally or edit the code:
 
 ```powershell
 git clone https://github.com/JacobArthurs/teams-monitor.git
 cd teams-monitor
-python -m pip install --user .
+pip install -e .
 ```
 
-If you plan to edit the code, use `python -m pip install --user -e .` so changes apply without reinstalling.
+The `-e` flag means your code changes apply without reinstalling. To upgrade later, run `git pull`, then restart the monitor.
 
 ## Quick Start
 
-Create a folder for your settings and copy the example config into it:
+Create your config file. If you installed from PyPI, create a settings folder and download the example config into it:
 
 ```powershell
 mkdir $env:USERPROFILE\teams-monitor-config
-copy config.example.toml $env:USERPROFILE\teams-monitor-config\config.toml
 cd $env:USERPROFILE\teams-monitor-config
+Invoke-WebRequest https://raw.githubusercontent.com/JacobArthurs/teams-monitor/main/config.example.toml -OutFile config.toml -UseBasicParsing
 ```
 
-Edit `config.toml` to set `[webhook] url`, then start the monitor from that folder:
+If you cloned the repository, copy the example config from inside the repository folder instead. Your copy is gitignored:
+
+```powershell
+copy config.example.toml config.toml
+```
+
+Edit `config.toml` to set `[webhook] url`, then start the monitor from the folder that holds it:
 
 ```powershell
 python -m teams_monitor
@@ -75,7 +92,7 @@ To try it without sending anything, leave `url` empty. It then runs in dry-run m
 python -m teams_monitor [--config PATH]
 ```
 
-The monitor runs until it is stopped. `teams-monitor` also works, but `--user` installs often leave its folder off `PATH`, so `python -m teams_monitor` is more reliable.
+The monitor runs until it is stopped. `teams-monitor` also works if Python's `Scripts` folder is on your `PATH`, so `python -m teams_monitor` is more reliable.
 
 | Flag | Description |
 | ---- | ----------- |
@@ -109,7 +126,7 @@ These come from what Teams writes to its log:
 
 ## Configuration
 
-Settings live in `config.toml`. The file must exist, but every setting in it is optional. [`config.example.toml`](config.example.toml) documents each one. Unknown sections and keys are rejected, so a typo fails at startup instead of being ignored.
+Settings live in `config.toml`. The file must exist, but every setting in it is optional. [`config.example.toml`](https://github.com/JacobArthurs/teams-monitor/blob/main/config.example.toml) documents each one. Unknown sections and keys are rejected, so a typo fails at startup instead of being ignored.
 
 | Section | Key | Default | Description |
 | ------- | --- | ------- | ----------- |
@@ -214,4 +231,4 @@ CI will automatically run tests and linting on your PR.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [MIT License](https://github.com/JacobArthurs/teams-monitor/blob/main/LICENSE).
