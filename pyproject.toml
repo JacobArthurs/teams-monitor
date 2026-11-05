@@ -15,6 +15,9 @@ classifiers = [
     "Topic :: System :: Monitoring",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
 [project.scripts]
 teams-monitor = "teams_monitor.cli:main"
 
@@ -23,3 +26,7 @@ version = { attr = "teams_monitor.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

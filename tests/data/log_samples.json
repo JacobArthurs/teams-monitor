@@ -1,0 +1,37 @@
+[
+  {
+    "event": "incoming_call",
+    "description": "Incoming call started ringing",
+    "example": "2026-11-03T17:53:45.038815-05:00 0x00003e44 <INFO> HfpVoipCallCoordinatorImpl: reportIncomingCall for callId: 5287a96c-657d-4d03-a428-516cae679e0a"
+  },
+  {
+    "event": "call_answered",
+    "description": "Incoming call was answered",
+    "example": "2026-10-13T17:41:22.201226-04:00 0x000048d8 <INFO> HfpVoipCallCoordinatorImpl: reportCallAccepted for callId: 13e25d06-3814-4a7f-afbd-109d3c013a6a"
+  },
+  {
+    "event": "call_ended",
+    "description": "Call ended. If it rang and was never answered, it was missed",
+    "example": "2026-11-03T17:54:06.973853-05:00 0x00003e44 <INFO> TeamsCallTracker: Call ended: 5287a96c-657d-4d03-a428-516cae679e0a (remaining: 0)"
+  },
+  {
+    "event": "new_message",
+    "description": "Unread count increased (chat or other activity)",
+    "example": "2026-10-23T14:05:44.309669-04:00 0x00009494 <DBG>  TaskbarBadgeServiceLegacy:Work: SetBadge Setting badge: NumericBadge{1}, overlay: 1 items, status Available"
+  },
+  {
+    "event": "notification_popup",
+    "description": "Teams popup shown on screen",
+    "example": "2026-11-03T17:53:45.056458-05:00 0x000040ec <INFO> Window: (hwnd=0x00090a56; name=ab6f105f-4f3c-49d9-ac33-b8d0f2c0668b; tags=Notifications) BringToTop"
+  },
+  {
+    "event": "app_started",
+    "description": "Teams started",
+    "example": "2026-10-06T12:47:39.030894-04:00 0x00004ac8 <INFO> NotificationIcon: (id={AF0ADBF8-4B35-4FFD-B1DB-18DE16ABB0F4}; fallback_id=1) Shell_NotifyIconW(NIM_ADD, id={AF0ADBF8-4B35-4FFD-B1DB-18DE16ABB0F4})"
+  },
+  {
+    "event": "app_quit",
+    "description": "Teams quit cleanly",
+    "example": "2026-10-21T17:16:24.952252-04:00 0x000009b4 <INFO> DesktopAppLifecycle: Quiting the application with reason:SystemTray"
+  }
+]

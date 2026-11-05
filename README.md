@@ -218,7 +218,14 @@ Contributions are welcome! To get started:
 2. Create a feature branch (`git checkout -b my-new-feature`)
 3. Open a pull request
 
-The project has no test suite or CI at the moment, so please check your change in dry-run mode before opening a pull request.
+To run the tests:
+
+```bat
+python -m pip install -e ".[dev]"
+python -m pytest
+```
+
+Test coverage is minimal and there is no CI at the moment, so please also check your change in dry-run mode before opening a pull request.
 
 ## License
 
