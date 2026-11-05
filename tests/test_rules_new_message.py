@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import pytest
-from helpers import badge, event, parse, stamp, tray_add
+from helpers import badge, event, parse, stamp, tray_add, unread_count
 
 from teams_monitor.models import AlertKind
 from teams_monitor.rules.new_message import NewMessageRule
@@ -36,6 +36,72 @@ def _unread(alerts: list) -> list[int]:
 
 def test_first_value_only_sets_the_baseline(rig: Rig) -> None:
     assert rig.feed(badge(1)) == []
+    assert rig.tick_after() == []
+
+
+def test_count_line_sets_the_baseline_so_the_first_badge_can_alert(rig: Rig) -> None:
+    assert rig.feed(unread_count(0, at=0)) == []
+    rig.feed(badge(1, at=10))
+    assert _unread(rig.tick_after()) == [1]
+
+
+def test_count_line_matching_the_first_badge_does_not_alert(rig: Rig) -> None:
+    rig.feed(unread_count(3, at=0))
+    rig.feed(badge(3, at=10))
+    assert rig.tick_after() == []
+
+
+def test_lagging_count_line_does_not_override_a_badge(rig: Rig) -> None:
+    rig.feed(badge(1, at=0))
+    rig.feed(unread_count(0, at=1))
+    rig.feed(badge(1, at=2))
+    assert rig.tick_after() == []
+
+
+@pytest.mark.parametrize(("after_restart", "alerted"), [(59.999, False), (60, True)])
+def test_count_line_is_ignored_while_teams_starts(
+    rig: Rig, after_restart: float, alerted: bool
+) -> None:
+    rig.feed(tray_add(at=0))
+    rig.feed(unread_count(0, at=after_restart))
+    rig.feed(badge(5, at=after_restart + 1))
+    assert len(rig.tick_after()) == (1 if alerted else 0)
+
+
+def test_count_line_with_an_invalid_time_is_ignored_after_a_restart(rig: Rig) -> None:
+    rig.feed(tray_add(at=0))
+    rig.feed(unread_count(0, at=100).replace(stamp(100), "2026-13-45T00:00:00.000000-05:00"))
+    rig.feed(badge(5, at=101))
+    assert rig.tick_after() == []
+
+
+def test_count_line_releases_a_settled_rise(rig: Rig) -> None:
+    rig.feed(badge(1, at=-1))
+    rig.feed(badge(2, at=0))
+    assert _unread(rig.feed(unread_count(2, at=3))) == [2]
+
+
+def test_history_never_alerts_and_the_last_badge_is_the_baseline(rig: Rig) -> None:
+    rig.rule.on_history(event(badge(1, at=0)))
+    rig.rule.on_history(event(badge(4, at=1)))
+    rig.rule.on_history(event(unread_count(0, at=2)))
+    assert rig.tick_after() == []
+    assert rig.feed(badge(4, at=3)) == []
+    assert rig.tick_after() == []
+    rig.feed(badge(5, at=4))
+    assert _unread(rig.tick_after()) == [5]
+
+
+def test_history_count_sets_the_baseline(rig: Rig) -> None:
+    rig.rule.on_history(event(unread_count(0, at=0)))
+    rig.feed(badge(1, at=10))
+    assert _unread(rig.tick_after()) == [1]
+
+
+def test_history_restart_clears_earlier_values(rig: Rig) -> None:
+    rig.rule.on_history(event(badge(1, at=0)))
+    rig.rule.on_history(event(tray_add(at=1)))
+    rig.feed(badge(5, at=2))
     assert rig.tick_after() == []
 
 

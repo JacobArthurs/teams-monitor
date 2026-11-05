@@ -20,9 +20,15 @@ from teams_monitor.watchdog import ActivityTracker
 class FakeTailer:
     def __init__(self) -> None:
         self.batches: deque[list[str]] = deque()
+        self.history_lines: list[str] = []
+        self.history_calls = 0
 
     def poll(self) -> list[str]:
         return self.batches.popleft() if self.batches else []
+
+    def history(self) -> list[str]:
+        self.history_calls += 1
+        return self.history_lines
 
 
 class SpyWatchdog:
@@ -73,6 +79,32 @@ def rig(clock) -> Rig:
 def test_lines_become_alerts(rig: Rig) -> None:
     rig.feed(incoming(CALL_A), unrelated(), incoming(CALL_B))
     assert [a.fields["call_id"] for a in rig.notifier.alerts] == [CALL_A, CALL_B]
+
+
+def test_history_is_read_once_and_never_alerts(rig: Rig) -> None:
+    rig.tailer.history_lines = [incoming(CALL_A)]
+    rig.monitor.run_once()
+    rig.monitor.run_once()
+    assert rig.tailer.history_calls == 1
+    assert rig.notifier.alerts == []
+
+
+def test_history_does_not_count_as_activity(rig: Rig) -> None:
+    before = rig.activity.last_activity
+    rig.tailer.history_lines = [unrelated()]
+    rig.clock.advance(10)
+    rig.monitor.run_once()
+    assert rig.activity.last_activity == before
+
+
+def test_history_failure_does_not_stop_monitoring(rig: Rig, caplog) -> None:
+    def history() -> list[str]:
+        raise OSError("disk")
+
+    rig.tailer.history = history
+    rig.feed(incoming(CALL_A))
+    assert rig.notifier.kinds == ["incoming_call"]
+    assert "failed to read the existing log" in caplog.text
 
 
 def test_tick_alerts_are_dispatched(clock) -> None:

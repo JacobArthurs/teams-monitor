@@ -43,10 +43,13 @@ class Monitor:
         self._suspend_gap = max(MIN_SUSPEND_GAP_SECONDS, 4 * poll_interval)
         self._last_check = clock.monotonic()
         self._last_iteration = self._last_check
+        self._restored = False
 
     def run_once(self) -> None:
         """One iteration: read new lines, check the tray, then run the full check if it is due."""
         self._handle_suspend()
+        if not self._restored:
+            self._restore()
 
         lines = self._tailer.poll()
         if lines:
@@ -71,6 +74,14 @@ class Monitor:
 
     def close(self) -> None:
         self._notifier.close()
+
+    def _restore(self) -> None:
+        """Once only, since monitoring can still run without what this restores."""
+        self._restored = True
+        try:
+            self._engine.restore(self._tailer.history())
+        except Exception:
+            log.exception("failed to read the existing log, continuing without it")
 
     def _handle_suspend(self) -> None:
         """After sleep, give Teams a full stale period to write again before judging it."""

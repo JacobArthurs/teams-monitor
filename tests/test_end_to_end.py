@@ -15,6 +15,7 @@ from helpers import (
     load_samples,
     tray_add,
     tray_remove,
+    unread_count,
     unrelated,
 )
 
@@ -23,12 +24,12 @@ from teams_monitor.config import Settings
 
 
 class Rig:
-    def __init__(self, tmp_path: Path, clock, recorder, **settings) -> None:
+    def __init__(self, tmp_path: Path, clock, recorder, existing=(), **settings) -> None:
         self.clock = clock
         self.recorder = recorder
         self.probe = FakeProbe(True)
         self.log = tmp_path / "MSTeams_1.log"
-        self.log.write_text("", encoding="utf-8")
+        self.log.write_text("".join(f"{line}\n" for line in existing), encoding="utf-8")
         self.monitor = build_monitor(
             Settings(log_dir=tmp_path, **settings), notifier=recorder, clock=clock, probe=self.probe
         )
@@ -83,6 +84,51 @@ def test_unread_rise_right_after_a_missed_call_is_suppressed(rig: Rig) -> None:
     rig.write(badge(1, at=0), incoming(CALL_A, at=1), ended(CALL_A, at=10), badge(2, at=11))
     rig.wait(2)
     assert rig.recorder.kinds == ["incoming_call", "missed_call"]
+
+
+def test_first_badge_alerts_when_the_count_was_logged_before_the_monitor_started(
+    tmp_path: Path, clock, recorder
+) -> None:
+    # The 2026-11-05 miss: started with no badge line in the log, then a message arrived.
+    rig = Rig(tmp_path, clock, recorder, existing=[unrelated(at=0), unread_count(0, at=60)])
+    rig.write(badge(1, at=330))
+    rig.wait(2)
+    assert rig.recorder.kinds == ["new_message"]
+    assert rig.recorder.alerts[0].fields["unread"] == 1
+
+
+def test_first_badge_alerts_when_the_count_is_logged_after_the_monitor_started(
+    rig: Rig,
+) -> None:
+    rig.write(unread_count(0, at=118))
+    rig.write(badge(1, at=330))
+    rig.wait(2)
+    assert rig.recorder.kinds == ["new_message"]
+
+
+def test_sent_message_after_reading_does_not_alert(tmp_path: Path, clock, recorder) -> None:
+    rig = Rig(tmp_path, clock, recorder, existing=[unread_count(0, at=0)])
+    rig.write(badge(1, at=330))
+    rig.wait(2)
+    rig.write(badge(0, at=1400), badge(1, at=1435), badge(0, at=1435.009))
+    rig.wait(2)
+    assert len(rig.recorder.alerts) == 1
+
+
+def test_unread_messages_from_before_the_monitor_started_do_not_alert(
+    tmp_path: Path, clock, recorder
+) -> None:
+    rig = Rig(tmp_path, clock, recorder, existing=[badge(3, at=0)])
+    rig.write(badge(3, at=10))
+    rig.wait(2)
+    assert rig.recorder.kinds == []
+
+
+def test_alerts_already_in_the_log_are_not_sent_at_startup(tmp_path: Path, clock, recorder) -> None:
+    existing = [incoming(CALL_A, at=0), badge(0, at=1), badge(1, at=2)]
+    rig = Rig(tmp_path, clock, recorder, existing=existing)
+    rig.wait(2)
+    assert rig.recorder.kinds == []
 
 
 def test_tray_removal_without_a_restart_alerts_once(rig: Rig) -> None:

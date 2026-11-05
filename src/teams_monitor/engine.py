@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from teams_monitor.models import Alert, LogLine, SignalName
 from teams_monitor.parsing import LineParser
@@ -39,6 +39,16 @@ class Engine:
         for rule in self._routes.get(event.signal, ()):
             alerts.extend(rule.on_event(event))
         return alerts
+
+    def restore(self, raw_lines: Iterable[str]) -> None:
+        """Bring rules up to date from lines written before the monitor started, without alerts."""
+        for raw in raw_lines:
+            line = self._parser.parse(raw)
+            event = self._matcher.match(line) if line is not None else None
+            if event is None:
+                continue
+            for rule in self._routes.get(event.signal, ()):
+                rule.on_history(event)
 
     def tick(self) -> list[Alert]:
         """Collect alerts from rules that were waiting for time to pass."""

@@ -67,6 +67,16 @@ class LineReader:
             lines.extend(_split_lines(data[: end + 1]))
         return ReadResult(lines, offset)
 
+    def read_before(self, path: Path, end: int) -> list[str]:
+        """Complete lines from up to one chunk of the file just before the end offset."""
+        start = max(0, end - self._max_chunk)
+        data = self._read_at(path, start, end - start)
+        last_newline = data.rfind(b"\n")
+        if last_newline == -1:
+            return []
+        lines = _split_lines(data[: last_newline + 1])
+        return lines[1:] if start > 0 else lines  # a cut-off first line is not usable
+
     @staticmethod
     def _read_at(path: Path, offset: int, length: int) -> bytes:
         try:

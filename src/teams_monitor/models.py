@@ -9,7 +9,7 @@ from enum import StrEnum
 
 
 class SignalName(StrEnum):
-    """Log patterns the monitor recognizes (S1 to S6)."""
+    """Log patterns the monitor recognizes (S1 to S7)."""
 
     CALL_INCOMING = "call_incoming"
     CALL_ANSWERED = "call_answered"
@@ -17,6 +17,7 @@ class SignalName(StrEnum):
     UNREAD_BADGE = "unread_badge"
     APP_STARTED = "app_started"
     APP_EXITED = "app_exited"
+    UNREAD_COUNT = "unread_count"
 
 
 class AlertKind(StrEnum):

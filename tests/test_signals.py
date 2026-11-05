@@ -31,6 +31,7 @@ from teams_monitor.signals import SignalMatcher
             {"unread": "1", "overlay_items": "1", "presence": "Available"},
         ),
         ("app_started", SignalName.APP_STARTED, {}),
+        ("unread_count", SignalName.UNREAD_COUNT, {"unread": "0"}),
     ],
 )
 def test_real_samples_match_their_signal(

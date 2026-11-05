@@ -51,6 +51,18 @@ class LogTailer:
         lines += self._drain()
         return lines
 
+    def history(self) -> list[str]:
+        """Lines already in the newest file at startup, which poll will not return.
+
+        Empty with from_start, because poll replays that file itself.
+        """
+        if not self._started:
+            self._start()
+        newest = self._locator.newest()
+        if self._from_start or newest is None:
+            return []
+        return self._reader.read_before(newest, self._offsets.get(newest, 0))
+
     def _start(self) -> None:
         self._started = True
         for path in self._locator.existing():

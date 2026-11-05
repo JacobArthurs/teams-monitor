@@ -4,10 +4,15 @@ Sending a message can make the count rise and fall within milliseconds, so a ris
 briefly and a fall back to the earlier count cancels it. The count also rises right after a
 missed call, so rises inside a short window after one are suppressed. That window rests on
 a single observation. Requires DBG level logging in Teams.
+
+A rise needs a count to compare against, and with nothing unread Teams may not write a numeric
+badge for a long time. Teams also logs its unread count every 5 minutes, so that line supplies
+the baseline until a badge does. Badges take priority because the count line lags behind them.
 """
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -17,7 +22,12 @@ from teams_monitor.clock import Clock
 from teams_monitor.models import Alert, Event, SignalName
 from teams_monitor.rules.base import Rule
 
+log = logging.getLogger(__name__)
+
 MESSAGE_HOLD = timedelta(seconds=2)
+# Unread messages survive a restart, but a count logged while Teams starts may not include them
+# yet. No startup log was available to measure this, so the length is a cautious estimate.
+STARTUP_SETTLE = timedelta(seconds=60)
 
 
 @dataclass(slots=True)
@@ -29,7 +39,7 @@ class _HeldRise:
 
 
 class NewMessageRule(Rule):
-    handles = frozenset({SignalName.UNREAD_BADGE, SignalName.APP_STARTED})
+    handles = frozenset({SignalName.UNREAD_BADGE, SignalName.UNREAD_COUNT, SignalName.APP_STARTED})
 
     def __init__(
         self,
@@ -44,6 +54,7 @@ class NewMessageRule(Rule):
         self._hold = hold
         self._last_unread: int | None = None
         self._held: _HeldRise | None = None
+        self._restarted_at: datetime | None = None
 
     def on_event(self, event: Event) -> list[Alert]:
         # Log time settles a held rise first, so a burst of old lines is judged correctly.
@@ -51,14 +62,22 @@ class NewMessageRule(Rule):
 
         if event.signal is SignalName.APP_STARTED:
             # Unread messages survive a restart, so the next value is a new baseline.
-            self._last_unread = None
+            self._mark_restart(event)
             self._held = None
+            return settled
+
+        if event.signal is SignalName.UNREAD_COUNT:
+            if self._seed_from_count(event):
+                log.info("unread baseline set to %d from the Teams count", self._last_unread)
             return settled
 
         unread = int(event.groups["unread"])
         previous, self._last_unread = self._last_unread, unread
         # The first value seen only sets the baseline. Equal values are refreshes.
-        if previous is None or unread == previous:
+        if previous is None:
+            log.info("unread baseline set to %d from the first badge, not alerting", unread)
+            return settled
+        if unread == previous:
             return settled
         alert = alerts.new_message(unread, event.groups["presence"], event.line.log_ts)
         if unread < previous:
@@ -74,6 +93,30 @@ class NewMessageRule(Rule):
             return []
         self._held = None
         return [held.alert]
+
+    def on_history(self, event: Event) -> None:
+        if event.signal is SignalName.APP_STARTED:
+            self._mark_restart(event)
+        elif event.signal is SignalName.UNREAD_COUNT:
+            self._seed_from_count(event)
+        elif event.signal is SignalName.UNREAD_BADGE:
+            self._last_unread = int(event.groups["unread"])
+
+    def _mark_restart(self, event: Event) -> None:
+        self._last_unread = None
+        self._restarted_at = event.line.ts
+
+    def _seed_from_count(self, event: Event) -> bool:
+        """Use the count as the baseline if there is none yet. True if it was used."""
+        if self._last_unread is not None or self._is_starting_up(event.line.ts):
+            return False
+        self._last_unread = int(event.groups["unread"])
+        return True
+
+    def _is_starting_up(self, ts: datetime | None) -> bool:
+        if self._restarted_at is None:
+            return False
+        return ts is None or ts - self._restarted_at < STARTUP_SETTLE
 
     def _release_if_settled(self, ts: datetime | None) -> list[Alert]:
         held = self._held

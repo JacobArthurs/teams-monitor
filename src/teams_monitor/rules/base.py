@@ -18,3 +18,7 @@ class Rule(ABC):
     def on_tick(self) -> list[Alert]:
         """Called after each poll, for rules that alert once time has passed."""
         return []
+
+    def on_history(self, event: Event) -> None:
+        """Restore state from a line written before the monitor started. Must not alert."""
+        return None

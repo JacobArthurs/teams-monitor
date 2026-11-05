@@ -1,4 +1,4 @@
-"""Signal definitions (S1 to S6) and the matcher that applies them."""
+"""Signal definitions (S1 to S7) and the matcher that applies them."""
 
 from __future__ import annotations
 
@@ -77,6 +77,15 @@ DEFAULT_SIGNALS: tuple[Signal, ...] = (
         _compile(
             r"^NotificationIcon: \(id=\{[0-9A-F-]+\}; fallback_id=\d+\) "
             r"Shell_NotifyIconW\(NIM_DELETE, id=\{[0-9A-F-]+\}\)"
+        ),
+    ),
+    Signal(
+        SignalName.UNREAD_COUNT,
+        "INFO",
+        _compile(
+            r"^native_modules::UserDataCrossCloudModule: BroadcastGlobalState: "
+            r"New Global State Event: UserDataGlobalState total number of users: \d+ "
+            r"\{ availability: .*?, unread notification count: (?P<unread>\d+) \}\s*$"
         ),
     ),
 )

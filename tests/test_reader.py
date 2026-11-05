@@ -12,6 +12,25 @@ def path(tmp_path: Path) -> Path:
     return tmp_path / "MSTeams_1.log"
 
 
+def test_read_before_stops_at_the_end_offset(path: Path) -> None:
+    path.write_bytes(b"one\ntwo\nlater\n")
+    assert LineReader().read_before(path, 8) == ["one", "two"]
+
+
+def test_read_before_drops_an_incomplete_last_line(path: Path) -> None:
+    path.write_bytes(b"one\ntwo\n")
+    assert LineReader().read_before(path, 6) == ["one"]
+
+
+def test_read_before_drops_the_cut_off_first_line_when_limited(path: Path) -> None:
+    path.write_bytes(b"one\ntwo\nthree\n")
+    assert LineReader(max_chunk=9).read_before(path, 14) == ["three"]
+
+
+def test_read_before_handles_a_missing_file(path: Path) -> None:
+    assert LineReader().read_before(path, 8) == []
+
+
 def test_reads_complete_lines_and_reports_the_offset(path: Path) -> None:
     path.write_bytes(b"one\ntwo\n")
     result = LineReader().read_available(path, 0)

@@ -56,6 +56,36 @@ def test_from_start_reads_only_the_newest_file(logs: Logs) -> None:
     assert _tailer(logs, from_start=True).poll() == ["newest file"]
 
 
+def test_history_returns_what_poll_skips_from_the_newest_file(logs: Logs) -> None:
+    logs.write("MSTeams_a.log", "older file\n")
+    logs.write("MSTeams_b.log", "old\n")
+    tailer = _tailer(logs)
+    assert tailer.history() == ["old"]
+    assert tailer.poll() == []
+    logs.append("MSTeams_b.log", "new\n")
+    assert tailer.poll() == ["new"]
+
+
+def test_history_ignores_lines_written_after_startup(logs: Logs) -> None:
+    logs.write("MSTeams_a.log", "old\n")
+    tailer = _tailer(logs)
+    tailer.poll()
+    logs.append("MSTeams_a.log", "new\n")
+    assert tailer.history() == ["old"]
+    assert tailer.poll() == ["new"]
+
+
+def test_history_is_empty_with_from_start(logs: Logs) -> None:
+    logs.write("MSTeams_a.log", "line\n")
+    tailer = _tailer(logs, from_start=True)
+    assert tailer.history() == []
+    assert tailer.poll() == ["line"]
+
+
+def test_history_of_an_empty_folder_is_empty(logs: Logs) -> None:
+    assert _tailer(logs).history() == []
+
+
 def test_lines_are_not_returned_twice(logs: Logs) -> None:
     logs.write("MSTeams_a.log", "")
     tailer = _tailer(logs)

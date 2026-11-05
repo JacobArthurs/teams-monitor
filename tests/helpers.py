@@ -61,6 +61,16 @@ def badge(unread: int, at: float = 0.0, presence: str = "Available") -> str:
     )
 
 
+def unread_count(unread: int, at: float = 0.0) -> str:
+    return _line(
+        at,
+        "INFO",
+        "native_modules::UserDataCrossCloudModule: BroadcastGlobalState: New Global State Event: "
+        "UserDataGlobalState total number of users: 1 "
+        f"{{ availability: Available, unread notification count: {unread} }}",
+    )
+
+
 def tray_add(at: float = 0.0) -> str:
     return _line(
         at,
