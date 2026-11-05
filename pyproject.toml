@@ -1,12 +1,15 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "teams-monitor"
 dynamic = ["version"]
-description = "Tails Microsoft Teams logs on Windows and sends webhook alerts for calls, messages and outages."
+description = "Tails Microsoft Teams logs on Windows and sends webhook alerts for calls, new activity and outages."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Jacob Arthurs" }]
 requires-python = ">=3.11"
 dependencies = []
 classifiers = [
@@ -14,6 +17,10 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Topic :: System :: Monitoring",
 ]
+
+[project.urls]
+Homepage = "https://github.com/JacobArthurs/teams-monitor"
+Issues = "https://github.com/JacobArthurs/teams-monitor/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff"]
