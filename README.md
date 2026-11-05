@@ -1,5 +1,6 @@
 # teams-monitor
 
+[![CI](https://img.shields.io/github/actions/workflow/status/JacobArthurs/teams-monitor/ci.yml?branch=main&label=CI)](https://github.com/JacobArthurs/teams-monitor/actions/workflows/ci.yml)
 [![python version](https://img.shields.io/badge/python-3.11%2B-blue)](./pyproject.toml)
 [![platform](https://img.shields.io/badge/platform-Windows-lightgrey)](#requirements)
 [![License](https://img.shields.io/github/license/JacobArthurs/teams-monitor)](LICENSE)
@@ -218,14 +219,15 @@ Contributions are welcome! To get started:
 2. Create a feature branch (`git checkout -b my-new-feature`)
 3. Open a pull request
 
-To run the tests:
+To run the tests and linter:
 
 ```bat
 python -m pip install -e ".[dev]"
 python -m pytest
+python -m ruff check
 ```
 
-Test coverage is minimal and there is no CI at the moment, so please also check your change in dry-run mode before opening a pull request.
+CI runs both on every push and pull request to `main`. Please also check your change in dry-run mode before opening a pull request, because the tests don't use a real Teams log.
 
 ## License
 
