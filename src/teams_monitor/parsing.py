@@ -24,6 +24,16 @@ def parse_timestamp(value: str) -> datetime | None:
         return None
 
 
+def _local_text(ts: datetime | None, original: str) -> str:
+    """The time in local time, or the original text if it is invalid or cannot be converted."""
+    if ts is None:
+        return original
+    try:
+        return ts.astimezone().isoformat()
+    except (OSError, OverflowError, ValueError):  # the year is outside what the OS can convert
+        return original
+
+
 class LineParser:
     """Parses one log line. Lines are truncated first to bound regex work."""
 
@@ -36,7 +46,7 @@ class LineParser:
             return None
         ts = parse_timestamp(found["ts"])
         return LogLine(
-            log_ts=ts.astimezone().isoformat() if ts else found["ts"],
+            log_ts=_local_text(ts, found["ts"]),
             ts=ts,
             thread=found["thread"],
             level=found["level"],

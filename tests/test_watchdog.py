@@ -66,9 +66,32 @@ def test_no_probe_is_allowed(clock) -> None:
 def test_tray_removal_alerts_after_the_grace(rig: Rig) -> None:
     rig.health.note_tray_removed()
     rig.clock.advance(4)
-    assert rig.reasons() == []
+    assert rig.watchdog.check_tray() == []
     rig.clock.advance(1)
-    assert rig.reasons() == ["tray icon removed"]
+    result = rig.watchdog.check_tray()
+    assert [alert.fields["reason"] for alert in result] == ["tray icon removed"]
+    assert rig.health.is_down is True
+
+
+def test_tray_alert_is_skipped_during_an_outage_already_alerted(rig: Rig) -> None:
+    rig.probe.running = False
+    rig.watchdog.check()
+    rig.health.note_tray_removed()
+    rig.clock.advance(5)
+    assert rig.watchdog.check_tray() == []
+
+
+def test_tray_check_does_not_run_the_process_probe(rig: Rig) -> None:
+    rig.probe.running = False
+    assert rig.watchdog.check_tray() == []
+    assert rig.health.is_down is False
+
+
+def test_full_check_leaves_a_tray_removal_to_the_tray_check(rig: Rig) -> None:
+    rig.health.note_tray_removed()
+    rig.clock.advance(5)
+    assert rig.watchdog.check() == []
+    assert len(rig.watchdog.check_tray()) == 1
 
 
 def test_stale_log_alerts_only_past_the_limit(rig: Rig) -> None:
@@ -86,17 +109,10 @@ def test_stale_log_with_unrecognized_lines_blames_the_format(rig: Rig) -> None:
     ]
 
 
-def test_process_reason_wins_over_tray_and_stale(rig: Rig) -> None:
+def test_process_reason_wins_over_stale(rig: Rig) -> None:
     rig.probe.running = False
-    rig.health.note_tray_removed()
     rig.clock.advance(STALE_AFTER + 1)
     assert rig.reasons() == ["Teams process is not running"]
-
-
-def test_tray_reason_wins_over_stale(rig: Rig) -> None:
-    rig.health.note_tray_removed()
-    rig.clock.advance(STALE_AFTER + 1)
-    assert rig.reasons() == ["tray icon removed"]
 
 
 def test_recovery_needs_activity_after_the_grace_then_allows_a_new_alert(rig: Rig) -> None:
@@ -138,6 +154,6 @@ def test_tray_removal_outside_the_window_alerts_when_it_opens(clock) -> None:
     clock.set_time_of_day(time(7, 0))
     rig.health.note_tray_removed()
     clock.advance(10)
-    assert rig.watchdog.check() == []
+    assert rig.watchdog.check_tray() == []
     clock.set_time_of_day(time(8, 0))
-    assert rig.reasons() == ["tray icon removed"]
+    assert len(rig.watchdog.check_tray()) == 1

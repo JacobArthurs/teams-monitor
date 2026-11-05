@@ -32,8 +32,15 @@ class Watchdog:
         self._probe = probe
         self._window = window
 
+    def check_tray(self) -> list[Alert]:
+        """Alert if the tray icon stayed away past its grace. Cheap enough to run on every poll."""
+        if not self._in_window() or not self._health.take_tray_removed():
+            return []
+        return [alerts.teams_down("tray icon removed")] if self._health.mark_down() else []
+
     def check(self) -> list[Alert]:
-        if self._window is not None and not self._window.contains(self._clock.now().time()):
+        """The full outage check. It runs a process probe, so it runs less often than check_tray."""
+        if not self._in_window():
             return []
 
         reason = self._down_reason()
@@ -45,11 +52,12 @@ class Watchdog:
             self._health.mark_up()
         return []
 
+    def _in_window(self) -> bool:
+        return self._window is None or self._window.contains(self._clock.now().time())
+
     def _down_reason(self) -> str | None:
         if self._probe is not None and self._probe.is_running() is False:
             return "Teams process is not running"
-        if self._health.take_tray_removed():
-            return "tray icon removed"
         idle = self._activity.idle_seconds()
         if idle > self._stale_after:
             if self._activity.format_suspect:

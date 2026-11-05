@@ -16,12 +16,14 @@ class ActiveWindow:
         """Parse "HH:MM-HH:MM". The window may wrap past midnight."""
         try:
             raw_start, raw_end = text.split("-")
-            return cls(
-                datetime.strptime(raw_start.strip(), "%H:%M").time(),
-                datetime.strptime(raw_end.strip(), "%H:%M").time(),
-            )
+            start = datetime.strptime(raw_start.strip(), "%H:%M").time()
+            end = datetime.strptime(raw_end.strip(), "%H:%M").time()
         except ValueError as exc:
             raise ValueError(f"invalid window {text!r}, expected HH:MM-HH:MM") from exc
+        if start == end:
+            # This would be active for a single instant, silently turning off outage alerts.
+            raise ValueError(f"invalid window {text!r}, start and end must differ")
+        return cls(start, end)
 
     def contains(self, moment: time) -> bool:
         if self.start <= self.end:

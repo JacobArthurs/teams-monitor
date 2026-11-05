@@ -24,6 +24,11 @@ def test_parse_rejects_bad_text(text: str) -> None:
         ActiveWindow.parse(text)
 
 
+def test_parse_rejects_equal_start_and_end() -> None:
+    with pytest.raises(ValueError, match="start and end must differ"):
+        ActiveWindow.parse("08:00-08:00")
+
+
 @pytest.mark.parametrize(
     ("moment", "inside"),
     [

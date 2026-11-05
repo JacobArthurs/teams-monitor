@@ -120,6 +120,7 @@ def test_empty_strings_mean_unset(load) -> None:
         (f"[monitoring]\nstale_minutes = {10**400}\n", "must be a finite number"),
         ("[monitoring]\nstale_minutes = 0\n", "stale minutes must be"),
         ('[monitoring]\nactive_hours = "soon"\n', "active_hours"),
+        ('[monitoring]\nactive_hours = "08:00-08:00"\n', "start and end must differ"),
         ('[logging]\nverbose = "yes"\n', "must be true or false"),
         ("[debug]\nfrom_start = 1\n", "must be true or false"),
         ("this is not toml\n", "not valid TOML"),

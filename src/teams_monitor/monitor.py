@@ -45,13 +45,14 @@ class Monitor:
         self._last_iteration = self._last_check
 
     def run_once(self) -> None:
-        """One iteration: read new lines, then run the watchdog if it is due."""
+        """One iteration: read new lines, check the tray, then run the full check if it is due."""
         self._handle_suspend()
 
         lines = self._tailer.poll()
         if lines:
             self._process(lines)
         self._dispatch(self._engine.tick())
+        self._dispatch(self._watchdog.check_tray())
 
         now = self._clock.monotonic()
         if now - self._last_check >= self._check_interval:

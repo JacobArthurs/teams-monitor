@@ -30,6 +30,17 @@ def test_delivery_error_does_not_stop_the_next_sink(caplog) -> None:
     assert "FailingNotifier failed to deliver teams_down: nope" in caplog.text
 
 
+def test_unexpected_error_does_not_stop_the_next_sink(caplog) -> None:
+    class BrokenNotifier(Notifier):
+        def notify(self, alert: Alert) -> None:
+            raise RuntimeError("bug")
+
+    last = RecordingNotifier()
+    CompositeNotifier([BrokenNotifier(), last]).notify(alerts.teams_down("x"))
+    assert len(last.alerts) == 1
+    assert "unexpected error in BrokenNotifier delivering teams_down" in caplog.text
+
+
 def test_close_reaches_every_sink() -> None:
     first, second = RecordingNotifier(), RecordingNotifier()
     CompositeNotifier([first, second]).close()

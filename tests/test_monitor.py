@@ -28,11 +28,17 @@ class FakeTailer:
 class SpyWatchdog:
     def __init__(self) -> None:
         self.checks = 0
+        self.tray_checks = 0
         self.result: list[Alert] = []
+        self.tray_result: list[Alert] = []
 
     def check(self) -> list[Alert]:
         self.checks += 1
         return self.result
+
+    def check_tray(self) -> list[Alert]:
+        self.tray_checks += 1
+        return self.tray_result
 
 
 class Rig:
@@ -93,6 +99,19 @@ def test_watchdog_runs_only_when_due(rig: Rig) -> None:
     assert rig.watchdog.checks == 1
     rig.monitor.run_once()
     assert rig.watchdog.checks == 1
+
+
+def test_tray_check_runs_on_every_iteration(rig: Rig) -> None:
+    rig.monitor.run_once()
+    rig.monitor.run_once()
+    assert rig.watchdog.tray_checks == 2
+    assert rig.watchdog.checks == 0
+
+
+def test_tray_alerts_are_dispatched(rig: Rig) -> None:
+    rig.watchdog.tray_result = [alerts.teams_down("x")]
+    rig.monitor.run_once()
+    assert rig.notifier.kinds == ["teams_down"]
 
 
 def test_watchdog_alerts_are_dispatched(rig: Rig) -> None:

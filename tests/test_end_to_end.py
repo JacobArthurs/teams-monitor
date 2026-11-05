@@ -94,6 +94,24 @@ def test_tray_removal_without_a_restart_alerts_once(rig: Rig) -> None:
     assert len(rig.recorder.alerts) == 1
 
 
+def test_tray_removal_alerts_as_soon_as_the_grace_ends(rig: Rig) -> None:
+    rig.write(tray_remove())
+    rig.wait(4)
+    assert rig.recorder.kinds == []
+    rig.wait(1)
+    assert _reasons(rig) == ["tray icon removed"]
+
+
+def test_tray_icon_back_after_the_grace_still_alerts_then_ends_the_outage(rig: Rig) -> None:
+    rig.write(tray_remove(at=0))
+    rig.wait(20)
+    rig.write(tray_add(at=20))
+    assert _reasons(rig) == ["tray icon removed"]
+    rig.write(tray_remove(at=21))
+    rig.wait(5)
+    assert len(rig.recorder.alerts) == 2
+
+
 def test_tray_remove_and_add_is_a_restart_not_an_outage(rig: Rig) -> None:
     rig.write(tray_remove(at=0), tray_add(at=0.49))
     rig.wait(30)

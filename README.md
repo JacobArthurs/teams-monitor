@@ -106,7 +106,7 @@ All settings live in `config.toml` and are optional. [`config.example.toml`](con
 | `[monitoring]` | `poll_seconds` | `0.5` | How often the log is polled for new lines |
 | `[monitoring]` | `check_interval_seconds` | `30` | How often the outage check runs |
 | `[monitoring]` | `stale_minutes` | `10` | Alert after this long with no line in the expected format |
-| `[monitoring]` | `active_hours` | empty | Local time window for Teams down alerts, such as `08:00-18:00`. Empty means always. If Teams is still down when the window opens, the alert fires then. |
+| `[monitoring]` | `active_hours` | empty | Local time window for Teams down alerts, such as `08:00-18:00`. Start and end must differ. Empty means always. If Teams is still down when the window opens, the alert fires then. |
 | `[monitoring]` | `suppress_after_missed_seconds` | `3` | Ignore an unread count rise this soon after a missed call |
 | `[logging]` | `file` | empty | Write monitor logs to this rotating file. Empty prints to the console. |
 | `[logging]` | `verbose` | `false` | Enable debug logging |

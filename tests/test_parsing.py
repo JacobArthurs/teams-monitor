@@ -66,6 +66,15 @@ def test_impossible_date_keeps_the_original_text() -> None:
     assert line.msg == "hello"
 
 
+@pytest.mark.parametrize("year", ["0001", "9999"])
+def test_year_the_os_cannot_convert_keeps_the_original_text(year: str) -> None:
+    ts = f"{year}-06-15T00:00:00.000000+00:00"
+    line = LineParser().parse(f"{ts} 0x1 <INFO> hello")
+    assert line is not None
+    assert line.log_ts == ts
+    assert line.msg == "hello"
+
+
 @pytest.mark.parametrize(
     "raw",
     [

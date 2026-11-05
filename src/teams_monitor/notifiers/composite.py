@@ -23,6 +23,12 @@ class CompositeNotifier(Notifier):
                 log.error(
                     "%s failed to deliver %s: %s", type(notifier).__name__, alert.kind.value, exc
                 )
+            except Exception:
+                log.exception(
+                    "unexpected error in %s delivering %s",
+                    type(notifier).__name__,
+                    alert.kind.value,
+                )
 
     def close(self) -> None:
         for notifier in self._notifiers:

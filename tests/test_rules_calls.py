@@ -19,6 +19,32 @@ def test_incoming_call_alerts_with_id_and_time() -> None:
     assert result[0].fields == {"call_id": CALL_A, "log_ts": parse(raw).log_ts}
 
 
+def test_repeated_ring_line_for_one_call_alerts_once() -> None:
+    rule = IncomingCallRule()
+    assert len(rule.on_event(event(incoming(CALL_A, at=0)))) == 1
+    assert rule.on_event(event(incoming(CALL_A, at=1))) == []
+
+
+def test_different_calls_each_alert() -> None:
+    rule = IncomingCallRule()
+    assert len(rule.on_event(event(incoming(CALL_A)))) == 1
+    assert len(rule.on_event(event(incoming(CALL_B)))) == 1
+
+
+def test_call_is_forgotten_once_it_ends() -> None:
+    rule = IncomingCallRule()
+    rule.on_event(event(incoming(CALL_A, at=0)))
+    assert rule.on_event(event(ended(CALL_A, at=1))) == []
+    assert len(rule.on_event(event(incoming(CALL_A, at=2)))) == 1
+
+
+def test_call_is_forgotten_after_a_restart() -> None:
+    rule = IncomingCallRule()
+    rule.on_event(event(incoming(CALL_A, at=0)))
+    assert rule.on_event(event(tray_add(at=1))) == []
+    assert len(rule.on_event(event(incoming(CALL_A, at=2)))) == 1
+
+
 def test_ring_then_end_is_a_missed_call() -> None:
     rule = MissedCallRule()
     assert rule.on_event(event(incoming(CALL_A))) == []
