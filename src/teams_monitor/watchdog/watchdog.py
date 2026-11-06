@@ -39,13 +39,18 @@ class Watchdog:
         return [alerts.teams_down("tray icon removed")] if self._health.mark_down() else []
 
     def check(self) -> list[Alert]:
-        """The full outage check. It runs a process probe, so it runs less often than check_tray."""
-        if not self._in_window():
+        """The full outage check. It runs a process probe, so it runs less often than check_tray.
+
+        Outside the window it only looks for recovery from an earlier outage. Otherwise that
+        outage would still count as ongoing, and the next one could not alert.
+        """
+        in_window = self._in_window()
+        if not in_window and not self._health.is_down:
             return []
 
         reason = self._down_reason()
         if reason is not None:
-            return [alerts.teams_down(reason)] if self._health.mark_down() else []
+            return [alerts.teams_down(reason)] if in_window and self._health.mark_down() else []
 
         if self._health.has_recovered(self._activity.last_activity):
             log.info("Teams recovered")

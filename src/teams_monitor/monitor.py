@@ -127,4 +127,6 @@ class Monitor:
 
     def _dispatch(self, alerts: Iterable[Alert]) -> None:
         for alert in alerts:
+            # Logged here, not on a delivery thread, so a retrying alert cannot delay this line.
+            log.info("ALERT %s p%d: %s", alert.kind.value, alert.priority, alert.text)
             self._notifier.notify(alert)

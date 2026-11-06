@@ -11,6 +11,7 @@ from helpers import FakeProbe
 from teams_monitor import alerts
 from teams_monitor.bootstrap import build_monitor, build_notifier
 from teams_monitor.config import Settings
+from teams_monitor.notifiers import NullNotifier, PermanentDeliveryError
 from teams_monitor.notifiers.http import HttpTransport
 
 WAIT = 5.0
@@ -52,7 +53,22 @@ def test_no_webhook_is_a_dry_run(transport, clock, tmp_path: Path, caplog) -> No
         notifier = build_notifier(Settings(log_dir=tmp_path), clock)
     assert "dry-run" in caplog.text
     assert transport.instances == []
+    assert isinstance(notifier, NullNotifier)
     notifier.close()
+
+
+def test_failed_delivery_logs_the_message_the_readme_documents(
+    monkeypatch: pytest.MonkeyPatch, clock, tmp_path: Path, caplog
+) -> None:
+    class RejectingTransport(HttpTransport):
+        def post_json(self, url: str, body: bytes) -> None:
+            raise PermanentDeliveryError("HTTP 404")
+
+    monkeypatch.setattr("teams_monitor.bootstrap.UrllibTransport", RejectingTransport)
+    notifier = build_notifier(Settings(log_dir=tmp_path, webhook_url="https://x.test/"), clock)
+    notifier.notify(alerts.incoming_call("id", "ts"))
+    notifier.close()
+    assert "delivery of incoming_call failed: HTTP 404" in caplog.text
 
 
 def test_plain_http_warns(transport, clock, tmp_path: Path, caplog) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 from collections import deque
 
@@ -79,6 +80,12 @@ def rig(clock) -> Rig:
 def test_lines_become_alerts(rig: Rig) -> None:
     rig.feed(incoming(CALL_A), unrelated(), incoming(CALL_B))
     assert [a.fields["call_id"] for a in rig.notifier.alerts] == [CALL_A, CALL_B]
+
+
+def test_every_dispatched_alert_is_logged(rig: Rig, caplog) -> None:
+    with caplog.at_level(logging.INFO, logger="teams_monitor"):
+        rig.feed(incoming(CALL_A))
+    assert "ALERT incoming_call p1: Incoming call" in caplog.text
 
 
 def test_history_is_read_once_and_never_alerts(rig: Rig) -> None:

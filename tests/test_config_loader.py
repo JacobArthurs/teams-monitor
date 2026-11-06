@@ -10,7 +10,7 @@ from teams_monitor.config import DEFAULT_LOG_DIR, DEFAULT_PROCESS_NAME, ConfigEr
 from teams_monitor.config_loader import load_settings
 from teams_monitor.window import ActiveWindow
 
-EXAMPLE_CONFIG = Path(__file__).parents[1] / "config.example.toml"
+EXAMPLE_CONFIG = Path(__file__).parents[1] / "src" / "teams_monitor" / "config.example.toml"
 
 
 @pytest.fixture

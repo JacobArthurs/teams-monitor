@@ -7,6 +7,7 @@ import pytest
 
 from teams_monitor import __version__, cli
 from teams_monitor.config import Settings
+from teams_monitor.config_loader import load_settings
 
 
 @pytest.fixture
@@ -32,7 +33,38 @@ def test_missing_config_exits_with_2(tmp_path: Path, capsys) -> None:
     with pytest.raises(SystemExit) as caught:
         cli.main(["--config", str(tmp_path / "missing.toml")])
     assert caught.value.code == 2
-    assert "config file not found" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "config file not found" in err
+    assert "--init-config" in err
+
+
+def test_init_config_creates_a_loadable_config_and_does_not_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    def fail(settings: Settings) -> None:
+        raise AssertionError("the monitor must not start")
+
+    monkeypatch.setattr(cli, "_run", fail)
+    path = tmp_path / "config.toml"
+    assert cli.main(["--init-config", "--config", str(path)]) == 0
+    assert str(path) in capsys.readouterr().out
+    assert load_settings(path).webhook_url is None
+
+
+def test_init_config_never_overwrites(config: Path, capsys) -> None:
+    config.write_text("# mine\n", encoding="utf-8")
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["--init-config", "--config", str(config)])
+    assert caught.value.code == 2
+    assert "already exists" in capsys.readouterr().err
+    assert config.read_text(encoding="utf-8") == "# mine\n"
+
+
+def test_init_config_reports_an_unwritable_path(tmp_path: Path, capsys) -> None:
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["--init-config", "--config", str(tmp_path / "missing" / "config.toml")])
+    assert caught.value.code == 2
+    assert "cannot create" in capsys.readouterr().err
 
 
 def test_unknown_flag_exits_with_2() -> None:

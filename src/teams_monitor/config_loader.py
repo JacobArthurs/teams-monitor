@@ -6,6 +6,7 @@ import math
 import os
 import tomllib
 from collections.abc import Mapping
+from importlib import resources
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +34,18 @@ SCHEMA: dict[str, frozenset[str]] = {
     "logging": frozenset({"file", "verbose"}),
     "debug": frozenset({"from_start"}),
 }
+
+
+def write_example_config(path: Path) -> None:
+    """Create a starter config. Never overwrites, because the file holds the user's settings."""
+    example = resources.files("teams_monitor").joinpath("config.example.toml").read_bytes()
+    try:
+        with path.open("xb") as handle:
+            handle.write(example)
+    except FileExistsError as exc:
+        raise ConfigError(f"{path.resolve()} already exists, so it was left unchanged") from exc
+    except OSError as exc:
+        raise ConfigError(f"cannot create {path}: {exc}") from exc
 
 
 def load_settings(path: Path) -> Settings:
@@ -76,7 +89,7 @@ def _read(path: Path) -> dict[str, Any]:
     except FileNotFoundError as exc:
         raise ConfigError(
             f"config file not found: {path.resolve()}\n"
-            "Copy config.example.toml to config.toml and edit it."
+            "Add --init-config to this command to create it."
         ) from exc
     except tomllib.TOMLDecodeError as exc:
         raise ConfigError(f"{path.name} is not valid TOML: {exc}") from exc

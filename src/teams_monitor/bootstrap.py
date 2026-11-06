@@ -14,9 +14,8 @@ from teams_monitor.health import HealthState
 from teams_monitor.monitor import Monitor
 from teams_monitor.notifiers import (
     BackgroundNotifier,
-    CompositeNotifier,
-    LogNotifier,
     Notifier,
+    NullNotifier,
     PayloadBuilder,
     UrllibTransport,
     WebhookNotifier,
@@ -31,21 +30,18 @@ log = logging.getLogger(__name__)
 
 
 def build_notifier(settings: Settings, clock: Clock) -> Notifier:
-    sinks: list[Notifier] = [LogNotifier()]
-    if settings.webhook_url:
-        sinks.append(
-            WebhookNotifier(
-                settings.webhook_url,
-                PayloadBuilder(socket.gethostname(), clock),
-                UrllibTransport(),
-            )
-        )
-        if settings.webhook_url.startswith("http://"):
-            log.warning("webhook URL uses plain http, alerts are sent unencrypted")
-    else:
+    if not settings.webhook_url:
         log.warning("no webhook configured, running in dry-run mode (alerts are only logged)")
+        return NullNotifier()
+    if settings.webhook_url.startswith("http://"):
+        log.warning("webhook URL uses plain http, alerts are sent unencrypted")
     return BackgroundNotifier(
-        CompositeNotifier(sinks), urgent_max_priority=alerts.PRIORITY_MISSED_CALL
+        WebhookNotifier(
+            settings.webhook_url,
+            PayloadBuilder(socket.gethostname(), clock),
+            UrllibTransport(),
+        ),
+        urgent_max_priority=alerts.PRIORITY_MISSED_CALL,
     )
 
 

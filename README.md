@@ -54,21 +54,20 @@ $env:PYTHONPATH = "src"
 
 ## Quick Start
 
-Create your config file. If you installed from PyPI, create a settings folder and download the example config into it:
+Create your config file. If you installed from PyPI, create a settings folder for it first:
 
 ```powershell
 mkdir $env:USERPROFILE\teams-monitor-config
 cd $env:USERPROFILE\teams-monitor-config
-Invoke-WebRequest https://raw.githubusercontent.com/JacobArthurs/teams-monitor/main/config.example.toml -OutFile config.toml -UseBasicParsing
 ```
 
-If you cloned the repository, copy the example config from inside the repository folder instead. Your copy is gitignored:
+If you cloned the repository, stay in the repository folder instead. Your config is gitignored there. Then create the file:
 
 ```powershell
-copy config.example.toml config.toml
+python -m teams_monitor --init-config
 ```
 
-Edit `config.toml` to set `[webhook] url`, then start the monitor from the folder that holds it:
+This never overwrites an existing file. Edit `config.toml` to set `[webhook] url`, then start the monitor from the folder that holds it:
 
 ```powershell
 python -m teams_monitor
@@ -82,14 +81,14 @@ To try it without sending anything, leave `url` empty. It then runs in dry-run m
 2026-11-05 11:44:26,087 WARNING teams_monitor.bootstrap: no webhook configured, running in dry-run mode (alerts are only logged)
 2026-11-05 11:44:26,088 INFO teams_monitor.monitor: monitor started
 2026-11-05 11:44:26,088 INFO teams_monitor.tailing.tailer: tailing MSTeams_sample.log from offset 0
-2026-11-05 11:44:26,093 INFO teams_monitor.notifiers.log_notifier: ALERT incoming_call p1: Incoming call
-2026-11-05 11:44:26,093 INFO teams_monitor.notifiers.log_notifier: ALERT missed_call p2: Missed call
+2026-11-05 11:44:26,093 INFO teams_monitor.monitor: ALERT incoming_call p1: Incoming call
+2026-11-05 11:44:26,093 INFO teams_monitor.monitor: ALERT missed_call p2: Missed call
 ```
 
 ## Usage
 
 ```powershell
-python -m teams_monitor [--config PATH]
+python -m teams_monitor [--config PATH] [--init-config]
 ```
 
 The monitor runs until it is stopped. Once installed with pip, `teams-monitor` also works if Python's `Scripts` folder is on your `PATH`, so `python -m teams_monitor` is more reliable.
@@ -97,6 +96,7 @@ The monitor runs until it is stopped. Once installed with pip, `teams-monitor` a
 | Flag | Description |
 | ---- | ----------- |
 | `--config` | Path to the config file (default: `config.toml` in the current folder) |
+| `--init-config` | Create a starter config file at the `--config` path and exit. Never overwrites an existing file. |
 | `--version` | Print the version and exit |
 | `-h, --help` | Show help and exit |
 
@@ -125,7 +125,7 @@ These come from what Teams writes to its log:
 
 ## Configuration
 
-Settings live in `config.toml`. The file must exist, but every setting in it is optional. [`config.example.toml`](https://github.com/JacobArthurs/teams-monitor/blob/main/config.example.toml) documents each one. Unknown sections and keys are rejected, so a typo fails at startup instead of being ignored.
+Settings live in `config.toml`. The file must exist, but every setting in it is optional. The file that `--init-config` creates documents each one. Unknown sections and keys are rejected, so a typo fails at startup instead of being ignored.
 
 | Section | Key | Default | Description |
 | ------- | --- | ------- | ----------- |
@@ -205,7 +205,7 @@ At shutdown, queued alerts get up to 15 seconds to send. Any that don't are name
 
 | Problem | What to check |
 | ------- | ------------- |
-| `config file not found` | Run the monitor from the folder that holds `config.toml`, or pass `--config` |
+| `config file not found` | Run the monitor from the folder that holds `config.toml`, pass `--config`, or create the file with `--init-config` |
 | `Teams log folder not found` | Set `[teams] log_dir` to the folder containing the `MSTeams_*.log` files |
 | No activity alerts | Check that your log contains unread count lines, using the command below |
 | `delivery of ... failed: HTTP 4xx` | Check `[webhook] url`. The endpoint rejected the alert, so it isn't retried. |

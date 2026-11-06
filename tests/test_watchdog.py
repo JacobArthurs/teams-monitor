@@ -149,6 +149,42 @@ def test_ongoing_outage_alerts_when_the_window_opens(clock) -> None:
     assert len(rig.watchdog.check()) == 1
 
 
+def test_recovery_outside_the_window_lets_the_next_outage_alert(clock) -> None:
+    rig = Rig(clock, window=ActiveWindow(time(8), time(18)))
+    clock.set_time_of_day(time(17, 0))
+    clock.advance(STALE_AFTER + 1)
+    assert rig.reasons() == ["no log activity for 10 min"]
+
+    clock.set_time_of_day(time(19, 0))
+    clock.advance(61)
+    rig.activity.touch()
+    assert rig.watchdog.check() == []
+    assert rig.health.is_down is False
+
+    rig.probe.running = False
+    clock.set_time_of_day(time(23, 0))
+    assert rig.watchdog.check() == []
+    assert rig.health.is_down is False
+
+    clock.set_time_of_day(time(8, 0))
+    assert rig.reasons() == ["Teams process is not running"]
+
+
+def test_outage_continuing_outside_the_window_alerts_only_once(clock) -> None:
+    rig = Rig(clock, running=False, window=ActiveWindow(time(8), time(18)))
+    clock.set_time_of_day(time(17, 0))
+    assert len(rig.watchdog.check()) == 1
+
+    clock.set_time_of_day(time(19, 0))
+    clock.advance(61)
+    rig.activity.touch()
+    assert rig.watchdog.check() == []
+    assert rig.health.is_down is True
+
+    clock.set_time_of_day(time(8, 0))
+    assert rig.watchdog.check() == []
+
+
 def test_tray_removal_outside_the_window_alerts_when_it_opens(clock) -> None:
     rig = Rig(clock, window=ActiveWindow(time(8), time(18)))
     clock.set_time_of_day(time(7, 0))

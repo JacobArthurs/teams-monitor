@@ -1,5 +1,4 @@
-# Copy this file to config.toml and edit it.
-# config.toml is gitignored because it holds the webhook URL, which works like a password.
+# Keep this file private, because the webhook URL works like a password.
 # Every setting is optional. Omitted settings use the defaults shown here.
 
 [teams]

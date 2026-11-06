@@ -30,3 +30,10 @@ class Notifier(ABC):
 
     def close(self) -> None:  # noqa: B027 - optional hook, intentionally not abstract
         """Release resources. Default is a no-op."""
+
+
+class NullNotifier(Notifier):
+    """Sends nothing, for dry runs. The monitor logs every alert before it reaches a notifier."""
+
+    def notify(self, alert: Alert) -> None:
+        pass

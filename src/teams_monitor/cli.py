@@ -13,7 +13,7 @@ from typing import NoReturn
 from teams_monitor import __version__
 from teams_monitor.bootstrap import build_monitor
 from teams_monitor.config import ConfigError, Settings
-from teams_monitor.config_loader import load_settings
+from teams_monitor.config_loader import load_settings, write_example_config
 from teams_monitor.fatal import report_without_console
 from teams_monitor.lifecycle import install_stop_handlers
 from teams_monitor.logging_setup import configure_logging
@@ -42,12 +42,25 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_CONFIG_PATH,
         help=f"path to the config file (default: {DEFAULT_CONFIG_PATH} in the current directory)",
     )
+    parser.add_argument(
+        "--init-config",
+        action="store_true",
+        help="create a starter config file at the --config path and exit",
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.init_config:
+        try:
+            write_example_config(args.config)
+        except ConfigError as exc:
+            parser.error(str(exc))
+        print(f"Created {args.config.resolve()}. Edit it, then start the monitor.")
+        return 0
+
     try:
         settings = load_settings(args.config)
     except ConfigError as exc:
