@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=77"]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -28,8 +28,7 @@ dev = ["pytest>=8", "ruff==0.17.3", "mypy==2.4.1"]
 [project.scripts]
 teams-monitor = "teams_monitor.cli:main"
 
-[tool.setuptools.dynamic]
-version = { attr = "teams_monitor.__version__" }
+[tool.setuptools_scm]
 
 [tool.setuptools.packages.find]
 where = ["src"]
