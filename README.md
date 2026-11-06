@@ -223,7 +223,6 @@ At shutdown, queued alerts get up to 15 seconds to send. Any that don't are name
 | No activity alerts | Check that your log contains unread count lines, using the command below |
 | `delivery of ... failed: HTTP 4xx` | Check `[webhook] url`. The endpoint rejected the alert, so it isn't retried. |
 | The webhook URL redirects | Set `[webhook] url` to the final address |
-| Nothing happens at logon | Check `%LOCALAPPDATA%\teams-monitor\startup-error.log` and your `[logging] file` |
 
 To check for unread count lines, run this after a new message arrives in Teams. If it prints nothing, activity alerts can't fire on your machine:
 
