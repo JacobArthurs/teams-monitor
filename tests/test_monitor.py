@@ -11,11 +11,8 @@ from teams_monitor import alerts
 from teams_monitor.engine import Engine
 from teams_monitor.models import Alert, AlertKind, Event, SignalName
 from teams_monitor.monitor import Monitor
-from teams_monitor.parsing import LineParser
 from teams_monitor.rules.base import Rule
 from teams_monitor.rules.incoming_call import IncomingCallRule
-from teams_monitor.signals import SignalMatcher
-from teams_monitor.watchdog import ActivityTracker
 
 
 class FakeTailer:
@@ -38,6 +35,14 @@ class SpyWatchdog:
         self.tray_checks = 0
         self.result: list[Alert] = []
         self.tray_result: list[Alert] = []
+        self.lines: list[tuple[int, int]] = []
+        self.resumes = 0
+
+    def note_lines(self, recognized: int, unrecognized: int) -> None:
+        self.lines.append((recognized, unrecognized))
+
+    def note_resume(self) -> None:
+        self.resumes += 1
 
     def check(self) -> list[Alert]:
         self.checks += 1
@@ -53,15 +58,13 @@ class Rig:
         self.clock = clock
         self.tailer = FakeTailer()
         self.watchdog = SpyWatchdog()
-        self.activity = ActivityTracker(clock)
         self.notifier = notifier or RecordingNotifier()
-        self.engine = engine or Engine(LineParser(), SignalMatcher(), [IncomingCallRule()])
+        self.engine = engine or Engine([IncomingCallRule()])
         self.monitor = Monitor(
             self.tailer,
             self.engine,
             self.notifier,
             self.watchdog,
-            self.activity,
             clock,
             poll_interval,
             check_interval,
@@ -97,11 +100,9 @@ def test_history_is_read_once_and_never_alerts(rig: Rig) -> None:
 
 
 def test_history_does_not_count_as_activity(rig: Rig) -> None:
-    before = rig.activity.last_activity
     rig.tailer.history_lines = [unrelated()]
-    rig.clock.advance(10)
     rig.monitor.run_once()
-    assert rig.activity.last_activity == before
+    assert rig.watchdog.lines == []
 
 
 def test_history_failure_does_not_stop_monitoring(rig: Rig, caplog) -> None:
@@ -124,7 +125,7 @@ def test_tick_alerts_are_dispatched(clock) -> None:
         def on_tick(self) -> list[Alert]:
             return [alerts.teams_down("tick")]
 
-    rig = Rig(clock, engine=Engine(LineParser(), SignalMatcher(), [TickRule()]))
+    rig = Rig(clock, engine=Engine([TickRule()]))
     rig.monitor.run_once()
     assert rig.notifier.kinds == ["teams_down"]
 
@@ -161,11 +162,10 @@ def test_watchdog_alerts_are_dispatched(rig: Rig) -> None:
 
 
 def test_long_gap_restarts_the_stale_timer_and_skips_the_check(rig: Rig) -> None:
-    before = rig.activity.last_activity
     rig.clock.advance(61)
     rig.monitor.run_once()
-    assert rig.activity.idle_seconds() == 0
-    assert rig.activity.last_activity == before  # sleeping is not log activity
+    assert rig.watchdog.resumes == 1
+    assert rig.watchdog.lines == []  # sleeping is not log activity
     assert rig.watchdog.checks == 0
     rig.clock.advance(30)
     rig.monitor.run_once()
@@ -175,7 +175,7 @@ def test_long_gap_restarts_the_stale_timer_and_skips_the_check(rig: Rig) -> None
 def test_gap_at_the_limit_is_not_a_suspend(rig: Rig) -> None:
     rig.clock.advance(60)
     rig.monitor.run_once()
-    assert rig.activity.idle_seconds() == 60
+    assert rig.watchdog.resumes == 0
     assert rig.watchdog.checks == 1
 
 
@@ -183,65 +183,15 @@ def test_suspend_gap_scales_with_a_long_poll_interval(clock) -> None:
     rig = Rig(clock, poll_interval=20.0)
     clock.advance(70)
     rig.monitor.run_once()
-    assert rig.activity.idle_seconds() == 70
+    assert rig.watchdog.resumes == 0
     clock.advance(81)
     rig.monitor.run_once()
-    assert rig.activity.idle_seconds() == 0
+    assert rig.watchdog.resumes == 1
 
 
-def test_recognized_line_counts_as_activity(rig: Rig) -> None:
-    rig.clock.advance(10)
-    rig.feed(unrelated())
-    assert rig.activity.last_activity == rig.clock.monotonic()
-
-
-def test_unrecognized_lines_are_not_activity(rig: Rig) -> None:
-    before = rig.activity.last_activity
-    rig.clock.advance(10)
-    rig.feed("garbage")
-    assert rig.activity.last_activity == before
-
-
-def test_batch_of_only_unrecognized_lines_builds_format_suspicion(rig: Rig) -> None:
-    rig.feed(*["garbage"] * 100)
-    assert rig.activity.format_suspect is True
-
-
-def test_one_recognized_line_clears_format_suspicion(rig: Rig) -> None:
-    rig.feed(*["garbage"] * 100)
-    rig.feed("garbage", unrelated())
-    assert rig.activity.format_suspect is False
-
-
-def test_blank_lines_are_ignored(rig: Rig) -> None:
-    rig.feed(*["", "   "] * 100)
-    assert rig.activity.format_suspect is False
-
-
-def test_parse_failure_does_not_stop_the_batch(clock, caplog) -> None:
-    class FlakyParser(LineParser):
-        def parse(self, raw: str):
-            if "boom" in raw:
-                raise OSError("bad timestamp")
-            return super().parse(raw)
-
-    rig = Rig(clock, engine=Engine(FlakyParser(), SignalMatcher(), [IncomingCallRule()]))
-    rig.feed("boom", incoming(CALL_A))
-    assert rig.notifier.kinds == ["incoming_call"]
-    assert "failed to parse a log line" in caplog.text
-
-
-def test_rule_failure_does_not_stop_the_batch(clock, caplog) -> None:
-    class FlakyRule(IncomingCallRule):
-        def on_event(self, event: Event) -> list[Alert]:
-            if event.groups["call_id"] == CALL_A:
-                raise RuntimeError("bug")
-            return super().on_event(event)
-
-    rig = Rig(clock, engine=Engine(LineParser(), SignalMatcher(), [FlakyRule()]))
-    rig.feed(incoming(CALL_A), incoming(CALL_B))
-    assert [a.fields["call_id"] for a in rig.notifier.alerts] == [CALL_B]
-    assert "failed to process a log line" in caplog.text
+def test_line_counts_reach_the_watchdog(rig: Rig) -> None:
+    rig.feed("garbage", unrelated(), "", "garbage")
+    assert rig.watchdog.lines == [(1, 2)]
 
 
 def test_notifier_failure_does_not_stop_the_batch(clock, caplog) -> None:
@@ -343,7 +293,7 @@ def test_a_failing_notifier_does_not_stop_the_loop(clock, caplog) -> None:
     stop = ScriptedStop(6)
     rig.monitor.run_forever(stop)
     assert len(stop.waits) == 6
-    assert "failed to send the monitor error alert" in caplog.text
+    assert "failed to dispatch monitor_error" in caplog.text
 
 
 def test_run_forever_does_nothing_when_already_stopped(rig: Rig) -> None:

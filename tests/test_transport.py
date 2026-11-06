@@ -12,7 +12,7 @@ import pytest
 
 from teams_monitor import __version__
 from teams_monitor.notifiers.base import PermanentDeliveryError, TransientDeliveryError
-from teams_monitor.notifiers.http import UrllibTransport, parse_retry_after
+from teams_monitor.notifiers.transport import UrllibTransport, parse_retry_after
 
 SECRET = "s3cret-token"
 

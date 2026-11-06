@@ -4,7 +4,7 @@ import pytest
 from helpers import CALL_A, event, load_samples, parse, stamp, tray_remove
 
 from teams_monitor.models import SignalName
-from teams_monitor.signals import SignalMatcher
+from teams_monitor.signals import match_signal
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,7 @@ def test_real_samples_match_their_signal(
 @pytest.mark.parametrize("name", ["notification_popup", "app_quit"])
 def test_samples_the_monitor_deliberately_ignores(name: str) -> None:
     # Clean quits are detected from the tray icon, and popups are not used at all.
-    assert SignalMatcher().match(parse(load_samples()[name])) is None
+    assert match_signal(parse(load_samples()[name])) is None
 
 
 def test_tray_removal_matches_app_exited() -> None:
@@ -59,7 +59,7 @@ def _info(msg: str) -> str:
 
 def test_right_message_at_the_wrong_level_does_not_match() -> None:
     msg = f"HfpVoipCallCoordinatorImpl: reportIncomingCall for callId: {CALL_A}"
-    assert SignalMatcher().match(parse(f"{stamp()} 0x1 <DBG> {msg}")) is None
+    assert match_signal(parse(f"{stamp()} 0x1 <DBG> {msg}")) is None
 
 
 @pytest.mark.parametrize(
@@ -74,7 +74,7 @@ def test_right_message_at_the_wrong_level_does_not_match() -> None:
     ],
 )
 def test_near_misses_do_not_match(msg: str) -> None:
-    assert SignalMatcher().match(parse(_info(msg))) is None
+    assert match_signal(parse(_info(msg))) is None
 
 
 def test_trailing_whitespace_after_a_call_id_is_allowed() -> None:

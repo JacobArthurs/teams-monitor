@@ -14,8 +14,7 @@ from typing import NoReturn
 from teams_monitor import __version__, alerts
 from teams_monitor.bootstrap import build_monitor, build_webhook
 from teams_monitor.clock import SystemClock
-from teams_monitor.config import ConfigError, Settings
-from teams_monitor.config_loader import load_settings, write_example_config
+from teams_monitor.config import ConfigError, Settings, load_settings, write_example_config
 from teams_monitor.fatal import report_without_console
 from teams_monitor.lifecycle import install_stop_handlers
 from teams_monitor.logging_setup import configure_logging

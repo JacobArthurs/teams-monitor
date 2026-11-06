@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from teams_monitor.watchdog import ActivityTracker
+from teams_monitor.watchdog.activity import ActivityTracker
 
 
 def _warnings(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from teams_monitor.health import HealthState
+from teams_monitor.watchdog.health import HealthState
 
 
 def test_starts_up(clock) -> None:

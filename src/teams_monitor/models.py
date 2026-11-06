@@ -9,7 +9,7 @@ from enum import StrEnum
 
 
 class SignalName(StrEnum):
-    """Log patterns the monitor recognizes (S1 to S7)."""
+    """Log patterns the monitor recognizes."""
 
     CALL_INCOMING = "call_incoming"
     CALL_ANSWERED = "call_answered"
@@ -25,7 +25,8 @@ class AlertKind(StrEnum):
 
     INCOMING_CALL = "incoming_call"
     MISSED_CALL = "missed_call"
-    NEW_MESSAGE = "new_message"
+    # The log cannot tell what the activity was. The value keeps its old name for webhook payloads.
+    NEW_ACTIVITY = "new_message"
     TEAMS_DOWN = "teams_down"
     MONITOR_ERROR = "monitor_error"
     TEST = "test"

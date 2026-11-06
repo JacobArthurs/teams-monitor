@@ -1,4 +1,4 @@
-"""A4 (outage half): detects crashes and hangs that never write a log line."""
+"""Outage detection. Owns all Teams up/down state, including crashes that write no log line."""
 
 from __future__ import annotations
 
@@ -6,9 +6,9 @@ import logging
 
 from teams_monitor import alerts
 from teams_monitor.clock import Clock
-from teams_monitor.health import HealthState
 from teams_monitor.models import Alert
 from teams_monitor.watchdog.activity import ActivityTracker
+from teams_monitor.watchdog.health import HealthState
 from teams_monitor.watchdog.process import ProcessProbe
 from teams_monitor.window import ActiveWindow
 
@@ -18,19 +18,40 @@ log = logging.getLogger(__name__)
 class Watchdog:
     def __init__(
         self,
-        health: HealthState,
-        activity: ActivityTracker,
         clock: Clock,
         stale_after: float,
         probe: ProcessProbe | None = None,
         window: ActiveWindow | None = None,
     ) -> None:
-        self._health = health
-        self._activity = activity
+        self._health = HealthState(clock)
+        self._activity = ActivityTracker(clock)
         self._clock = clock
         self._stale_after = stale_after
         self._probe = probe
         self._window = window
+
+    @property
+    def is_down(self) -> bool:
+        return self._health.is_down
+
+    def note_lines(self, recognized: int, unrecognized: int) -> None:
+        """Only recognized lines count as activity, so a changed log format ends in an alert."""
+        if recognized:
+            self._activity.touch()
+        else:
+            self._activity.note_unrecognized(unrecognized)
+
+    def note_tray_added(self) -> None:
+        """Teams added its tray icon, so it is running and any outage is over."""
+        self._health.mark_up()
+
+    def note_tray_removed(self) -> None:
+        """Teams removed its tray icon. check_tray alerts if the icon stays away."""
+        self._health.note_tray_removed()
+
+    def note_resume(self) -> None:
+        """The system woke from sleep, so give Teams a full stale period to write again."""
+        self._activity.restart_idle()
 
     def check_tray(self) -> list[Alert]:
         """Alert if the tray icon stayed away past its grace. Cheap enough to run on every poll."""

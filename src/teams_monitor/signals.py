@@ -1,9 +1,8 @@
-"""Signal definitions (S1 to S7) and the matcher that applies them."""
+"""Signal definitions and the function that applies them."""
 
 from __future__ import annotations
 
 import re
-from collections import defaultdict
 from dataclasses import dataclass
 
 from teams_monitor.models import Event, LogLine, SignalName
@@ -22,13 +21,13 @@ class Signal:
     pattern: re.Pattern[str]
 
     def match(self, line: LogLine) -> Event | None:
-        found = self.pattern.match(line.msg)
+        found = self.pattern.match(line.msg) if line.level == self.level else None
         if found is None:
             return None
         return Event(signal=self.name, line=line, groups=found.groupdict())
 
 
-DEFAULT_SIGNALS: tuple[Signal, ...] = (
+SIGNALS: tuple[Signal, ...] = (
     Signal(
         SignalName.CALL_INCOMING,
         "INFO",
@@ -90,17 +89,10 @@ DEFAULT_SIGNALS: tuple[Signal, ...] = (
 )
 
 
-class SignalMatcher:
-    """Finds the signal a log line represents, if any. Indexed by log level."""
-
-    def __init__(self) -> None:
-        self._by_level: dict[str, list[Signal]] = defaultdict(list)
-        for signal in DEFAULT_SIGNALS:
-            self._by_level[signal.level].append(signal)
-
-    def match(self, line: LogLine) -> Event | None:
-        for signal in self._by_level.get(line.level, ()):
-            event = signal.match(line)
-            if event is not None:
-                return event
-        return None
+def match_signal(line: LogLine) -> Event | None:
+    """Find the signal a log line represents, if any."""
+    for signal in SIGNALS:
+        event = signal.match(line)
+        if event is not None:
+            return event
+    return None

@@ -7,8 +7,8 @@ import http.client
 import math
 import urllib.error
 import urllib.request
-from abc import ABC, abstractmethod
 from datetime import UTC, datetime
+from typing import Protocol
 
 from teams_monitor import __version__
 from teams_monitor.notifiers.base import PermanentDeliveryError, TransientDeliveryError
@@ -21,13 +21,13 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-class HttpTransport(ABC):
-    @abstractmethod
+class HttpTransport(Protocol):
     def post_json(self, url: str, body: bytes) -> None:
         """POST a JSON body. Raises Transient or PermanentDeliveryError on failure."""
+        ...
 
 
-class UrllibTransport(HttpTransport):
+class UrllibTransport:
     def __init__(self, timeout: float = 5.0) -> None:
         self._timeout = timeout
         self._opener = urllib.request.build_opener(_NoRedirect)

@@ -34,17 +34,15 @@ def _local_text(ts: datetime | None, original: str) -> str:
         return original
 
 
-class LineParser:
-    """Parses one log line. Lines are truncated first to bound regex work."""
-
-    def parse(self, raw: str) -> LogLine | None:
-        found = _LINE.match(raw[:MAX_LINE_LENGTH])
-        if found is None:
-            return None
-        ts = parse_timestamp(found["ts"])
-        return LogLine(
-            log_ts=_local_text(ts, found["ts"]),
-            ts=ts,
-            level=found["level"],
-            msg=found["msg"],
-        )
+def parse_line(raw: str) -> LogLine | None:
+    """Parse one log line, truncated first to bound regex work. None if not in the format."""
+    found = _LINE.match(raw[:MAX_LINE_LENGTH])
+    if found is None:
+        return None
+    ts = parse_timestamp(found["ts"])
+    return LogLine(
+        log_ts=_local_text(ts, found["ts"]),
+        ts=ts,
+        level=found["level"],
+        msg=found["msg"],
+    )

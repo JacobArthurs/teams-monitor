@@ -6,11 +6,11 @@ import pytest
 
 from teams_monitor import alerts
 from teams_monitor.models import AlertKind
-from teams_monitor.notifiers import PayloadBuilder
+from teams_monitor.notifiers import build_payload
 
 
 def test_common_fields(clock) -> None:
-    payload = PayloadBuilder("MY-PC", clock).build(alerts.incoming_call("id", "ts"))
+    payload = build_payload(alerts.incoming_call("id", "ts"), "MY-PC", clock.now())
     assert payload == {
         "alert": "incoming_call",
         "priority": 1,
@@ -28,12 +28,12 @@ def test_common_fields(clock) -> None:
     [
         (alerts.incoming_call("id", "ts"), {"call_id": "id", "log_ts": "ts"}),
         (alerts.missed_call("id", "ts"), {"call_id": "id", "log_ts": "ts"}),
-        (alerts.new_message(4, "Busy", "ts"), {"unread": 4, "presence": "Busy", "log_ts": "ts"}),
+        (alerts.new_activity(4, "Busy", "ts"), {"unread": 4, "presence": "Busy", "log_ts": "ts"}),
         (alerts.teams_down("why"), {"reason": "why"}),
     ],
 )
 def test_each_alert_adds_its_own_fields_and_is_json_safe(clock, alert, expected) -> None:
-    payload = PayloadBuilder("MY-PC", clock).build(alert)
+    payload = build_payload(alert, "MY-PC", clock.now())
     assert expected.items() <= payload.items()
     json.dumps(payload)
 
@@ -43,7 +43,7 @@ def test_each_alert_adds_its_own_fields_and_is_json_safe(clock, alert, expected)
     [
         (alerts.incoming_call("i", "t"), AlertKind.INCOMING_CALL, 1, "Incoming call"),
         (alerts.missed_call("i", "t"), AlertKind.MISSED_CALL, 2, "Missed call"),
-        (alerts.new_message(4, "p", "t"), AlertKind.NEW_MESSAGE, 3, "New activity (unread 4)"),
+        (alerts.new_activity(4, "p", "t"), AlertKind.NEW_ACTIVITY, 3, "New activity (unread 4)"),
         (alerts.teams_down("why"), AlertKind.TEAMS_DOWN, 4, "Teams down: why"),
     ],
 )

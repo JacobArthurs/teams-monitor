@@ -5,9 +5,9 @@ import json
 import pytest
 
 from teams_monitor import alerts
-from teams_monitor.notifiers import PayloadBuilder, WebhookNotifier
+from teams_monitor.notifiers import WebhookNotifier
 from teams_monitor.notifiers.base import PermanentDeliveryError, TransientDeliveryError
-from teams_monitor.notifiers.http import HttpTransport
+from teams_monitor.notifiers.transport import HttpTransport
 
 URL = "https://hooks.example.com/x"
 
@@ -33,9 +33,7 @@ def sleeps() -> list[float]:
 @pytest.fixture
 def make(clock, sleeps: list[float]):
     def _make(transport: HttpTransport, **kwargs) -> WebhookNotifier:
-        return WebhookNotifier(
-            URL, PayloadBuilder("MY-PC", clock), transport, sleep=sleeps.append, **kwargs
-        )
+        return WebhookNotifier(URL, "MY-PC", clock, transport, sleep=sleeps.append, **kwargs)
 
     return _make
 

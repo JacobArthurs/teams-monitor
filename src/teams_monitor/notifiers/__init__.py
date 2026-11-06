@@ -8,8 +8,8 @@ from teams_monitor.notifiers.base import (
     PermanentDeliveryError,
     TransientDeliveryError,
 )
-from teams_monitor.notifiers.http import HttpTransport, UrllibTransport
-from teams_monitor.notifiers.payload import PayloadBuilder
+from teams_monitor.notifiers.payload import build_payload
+from teams_monitor.notifiers.transport import HttpTransport, UrllibTransport
 from teams_monitor.notifiers.webhook import WebhookNotifier
 
 __all__ = [
@@ -18,9 +18,9 @@ __all__ = [
     "HttpTransport",
     "Notifier",
     "NullNotifier",
-    "PayloadBuilder",
     "PermanentDeliveryError",
     "TransientDeliveryError",
     "UrllibTransport",
     "WebhookNotifier",
+    "build_payload",
 ]

@@ -1,26 +1,26 @@
-"""A4 (log driven half): track the Teams tray icon.
+"""Passes tray icon lines to the Watchdog. Never alerts itself.
 
 Teams removes and re-adds its tray icon at every launch, so a removal alone proves nothing.
-This rule only records it. The Watchdog alerts if the icon stays away, and it also covers
-crashes, which never write these lines.
+The Watchdog alerts if the icon stays away, and it also covers crashes, which never write
+these lines.
 """
 
 from __future__ import annotations
 
-from teams_monitor.health import HealthState
 from teams_monitor.models import Alert, Event, SignalName
 from teams_monitor.rules.base import Rule
+from teams_monitor.watchdog import Watchdog
 
 
-class TeamsDownRule(Rule):
+class TrayIconRule(Rule):
     handles = frozenset({SignalName.APP_STARTED, SignalName.APP_EXITED})
 
-    def __init__(self, health: HealthState) -> None:
-        self._health = health
+    def __init__(self, watchdog: Watchdog) -> None:
+        self._watchdog = watchdog
 
     def on_event(self, event: Event) -> list[Alert]:
         if event.signal is SignalName.APP_STARTED:
-            self._health.mark_up()
+            self._watchdog.note_tray_added()
         else:
-            self._health.note_tray_removed()
+            self._watchdog.note_tray_removed()
         return []

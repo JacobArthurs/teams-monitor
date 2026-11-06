@@ -7,10 +7,11 @@ import logging
 import time
 from collections.abc import Callable, Sequence
 
+from teams_monitor.clock import Clock
 from teams_monitor.models import Alert
 from teams_monitor.notifiers.base import Notifier, TransientDeliveryError
-from teams_monitor.notifiers.http import HttpTransport
-from teams_monitor.notifiers.payload import PayloadBuilder
+from teams_monitor.notifiers.payload import build_payload
+from teams_monitor.notifiers.transport import HttpTransport
 
 log = logging.getLogger(__name__)
 
@@ -23,19 +24,22 @@ class WebhookNotifier(Notifier):
     def __init__(
         self,
         url: str,
-        payloads: PayloadBuilder,
+        host: str,
+        clock: Clock,
         transport: HttpTransport,
         retry_delays: Sequence[float] = DEFAULT_RETRY_DELAYS,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self._url = url
-        self._payloads = payloads
+        self._host = host
+        self._clock = clock
         self._transport = transport
         self._retry_delays = tuple(retry_delays)
         self._sleep = sleep
 
     def notify(self, alert: Alert) -> None:
-        body = json.dumps(self._payloads.build(alert)).encode("utf-8")
+        payload = build_payload(alert, self._host, self._clock.now())
+        body = json.dumps(payload).encode("utf-8")
         attempts = len(self._retry_delays) + 1
         for attempt in range(attempts):
             try:

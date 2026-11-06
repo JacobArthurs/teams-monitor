@@ -4,27 +4,28 @@ from __future__ import annotations
 
 import logging
 import socket
-from datetime import timedelta
 
 from teams_monitor import alerts
 from teams_monitor.clock import Clock, SystemClock
 from teams_monitor.config import Settings
 from teams_monitor.engine import Engine
-from teams_monitor.health import HealthState
 from teams_monitor.monitor import Monitor
 from teams_monitor.notifiers import (
     BackgroundNotifier,
     Notifier,
     NullNotifier,
-    PayloadBuilder,
     UrllibTransport,
     WebhookNotifier,
 )
-from teams_monitor.parsing import LineParser
-from teams_monitor.rules import build_default_rules
-from teams_monitor.signals import SignalMatcher
+from teams_monitor.rules import (
+    IncomingCallRule,
+    MissedCallRule,
+    NewActivityRule,
+    Rule,
+    TrayIconRule,
+)
 from teams_monitor.tailing import LineReader, LogLocator, LogTailer
-from teams_monitor.watchdog import ActivityTracker, ProcessProbe, TasklistProbe, Watchdog
+from teams_monitor.watchdog import ProcessProbe, TasklistProbe, Watchdog
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ log = logging.getLogger(__name__)
 def build_webhook(url: str, clock: Clock) -> WebhookNotifier:
     if url.startswith("http://"):
         log.warning("webhook URL uses plain http, alerts are sent unencrypted")
-    return WebhookNotifier(url, PayloadBuilder(socket.gethostname(), clock), UrllibTransport())
+    return WebhookNotifier(url, socket.gethostname(), clock, UrllibTransport())
 
 
 def build_notifier(settings: Settings, clock: Clock) -> Notifier:
@@ -43,6 +44,16 @@ def build_notifier(settings: Settings, clock: Clock) -> Notifier:
         build_webhook(settings.webhook_url, clock),
         urgent_max_priority=alerts.PRIORITY_MISSED_CALL,
     )
+
+
+def build_rules(watchdog: Watchdog, suppress_after_missed: float, clock: Clock) -> list[Rule]:
+    missed_calls = MissedCallRule()
+    return [
+        IncomingCallRule(),
+        missed_calls,
+        NewActivityRule(lambda: missed_calls.last_missed_at, suppress_after_missed, clock),
+        TrayIconRule(watchdog),
+    ]
 
 
 def build_monitor(
@@ -59,28 +70,17 @@ def build_monitor(
     if not settings.log_dir.is_dir():
         log.warning("Teams log folder not found: %s. Check [teams] log_dir.", settings.log_dir)
 
-    health = HealthState(clock)
-    activity = ActivityTracker(clock)
-    engine = Engine(
-        LineParser(),
-        SignalMatcher(),
-        build_default_rules(health, timedelta(seconds=settings.suppress_after_missed), clock),
-    )
-    tailer = LogTailer(LogLocator(settings.log_dir), LineReader(), settings.from_start)
     watchdog = Watchdog(
-        health=health,
-        activity=activity,
         clock=clock,
         stale_after=settings.stale_minutes * 60,
         probe=probe,
         window=settings.active_window,
     )
     return Monitor(
-        tailer=tailer,
-        engine=engine,
+        tailer=LogTailer(LogLocator(settings.log_dir), LineReader(), settings.from_start),
+        engine=Engine(build_rules(watchdog, settings.suppress_after_missed, clock)),
         notifier=notifier,
         watchdog=watchdog,
-        activity=activity,
         clock=clock,
         poll_interval=settings.poll_interval,
         check_interval=settings.check_interval,

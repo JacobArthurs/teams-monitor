@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import logging
 import threading
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 
 from teams_monitor import alerts
 from teams_monitor.clock import Clock
 from teams_monitor.engine import Engine
-from teams_monitor.models import Alert, LogLine
+from teams_monitor.models import Alert
 from teams_monitor.notifiers import Notifier
 from teams_monitor.tailing import LogTailer
-from teams_monitor.watchdog import ActivityTracker, Watchdog
+from teams_monitor.watchdog import Watchdog
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +32,6 @@ class Monitor:
         engine: Engine,
         notifier: Notifier,
         watchdog: Watchdog,
-        activity: ActivityTracker,
         clock: Clock,
         poll_interval: float,
         check_interval: float,
@@ -41,7 +40,6 @@ class Monitor:
         self._engine = engine
         self._notifier = notifier
         self._watchdog = watchdog
-        self._activity = activity
         self._clock = clock
         self._poll_interval = poll_interval
         self._check_interval = check_interval
@@ -58,7 +56,9 @@ class Monitor:
 
         lines = self._tailer.poll()
         if lines:
-            self._process(lines)
+            result = self._engine.process(lines)
+            self._watchdog.note_lines(result.recognized, result.unrecognized)
+            self._dispatch(result.alerts)
         self._dispatch(self._engine.tick())
         self._dispatch(self._watchdog.check_tray())
 
@@ -80,19 +80,13 @@ class Monitor:
                 failures += 1
                 log.exception("monitor iteration failed (%d in a row)", failures)
                 if failures == FAILURE_ALERT_THRESHOLD:
-                    self._alert_failing(failures)
+                    self._dispatch([alerts.monitor_error(failures)])
                 delay = max(self._poll_interval, min(delay * 2, MAX_FAILURE_DELAY_SECONDS))
             stop.wait(delay)
         log.info("monitor stopping")
 
     def close(self) -> None:
         self._notifier.close()
-
-    def _alert_failing(self, failures: int) -> None:
-        try:
-            self._dispatch([alerts.monitor_error(failures)])
-        except Exception:
-            log.exception("failed to send the monitor error alert")
 
     def _restore(self) -> None:
         """Once only, since monitoring can still run without what this restores."""
@@ -109,43 +103,14 @@ class Monitor:
         self._last_iteration = now
         if gap > self._suspend_gap:
             log.info("no poll for %.0f s (system sleep?), restarting the stale timer", gap)
-            self._activity.restart_idle()
+            self._watchdog.note_resume()
             self._last_check = now
-
-    def _process(self, raw_lines: Sequence[str]) -> None:
-        parsed: list[LogLine] = []
-        unrecognized = 0
-        for raw in raw_lines:
-            if not raw.strip():
-                continue
-            line = self._parse(raw)
-            if line is None:
-                unrecognized += 1
-            else:
-                parsed.append(line)
-
-        # Only recognized lines count as activity, so a changed log format ends in an alert.
-        # Touch before routing so a down line cannot count as later activity.
-        if parsed:
-            self._activity.touch()
-        else:
-            self._activity.note_unrecognized(unrecognized)
-
-        for line in parsed:
-            try:
-                self._dispatch(self._engine.route(line))
-            except Exception:
-                log.exception("failed to process a log line, continuing with the next one")
-
-    def _parse(self, raw: str) -> LogLine | None:
-        try:
-            return self._engine.parse(raw)
-        except Exception:
-            log.exception("failed to parse a log line, continuing with the next one")
-            return None
 
     def _dispatch(self, pending: Iterable[Alert]) -> None:
         for alert in pending:
             # Logged here, not on a delivery thread, so a retrying alert cannot delay this line.
             log.info("ALERT %s p%d: %s", alert.kind.value, alert.priority, alert.text)
-            self._notifier.notify(alert)
+            try:
+                self._notifier.notify(alert)
+            except Exception:
+                log.exception("failed to dispatch %s", alert.kind.value)

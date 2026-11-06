@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 import pytest
 from helpers import load_samples, stamp
 
-from teams_monitor.parsing import MAX_LINE_LENGTH, LineParser, parse_timestamp
+from teams_monitor.parsing import MAX_LINE_LENGTH, parse_line, parse_timestamp
 
 # Teams writes UTC clock time and labels it with the local offset, so each label is ignored.
 EXPECTED = {
@@ -26,7 +26,7 @@ def test_every_sample_has_an_expectation() -> None:
 
 @pytest.mark.parametrize("name", EXPECTED)
 def test_real_samples_parse(name: str) -> None:
-    line = LineParser().parse(load_samples()[name])
+    line = parse_line(load_samples()[name])
     ts, level = EXPECTED[name]
     assert line is not None
     assert line.ts == ts
@@ -36,13 +36,13 @@ def test_real_samples_parse(name: str) -> None:
 @pytest.mark.parametrize("name", EXPECTED)
 def test_log_ts_is_the_same_instant_as_ts(name: str) -> None:
     # The text of log_ts depends on the machine's timezone, so only the instant is compared.
-    line = LineParser().parse(load_samples()[name])
+    line = parse_line(load_samples()[name])
     assert line is not None
     assert datetime.fromisoformat(line.log_ts) == line.ts
 
 
 def test_message_is_captured_without_the_extra_space_after_dbg() -> None:
-    line = LineParser().parse(load_samples()["new_message"])
+    line = parse_line(load_samples()["new_message"])
     assert line is not None
     assert line.msg.startswith("TaskbarBadgeServiceLegacy:Work:")
 
@@ -59,7 +59,7 @@ def test_timestamp_with_excess_fraction_digits_is_accepted() -> None:
 
 
 def test_impossible_date_keeps_the_original_text() -> None:
-    line = LineParser().parse("2026-13-45T00:00:00.000000-05:00 0x1 <INFO> hello")
+    line = parse_line("2026-13-45T00:00:00.000000-05:00 0x1 <INFO> hello")
     assert line is not None
     assert line.ts is None
     assert line.log_ts == "2026-13-45T00:00:00.000000-05:00"
@@ -69,7 +69,7 @@ def test_impossible_date_keeps_the_original_text() -> None:
 @pytest.mark.parametrize("year", ["0001", "9999"])
 def test_year_the_os_cannot_convert_keeps_the_original_text(year: str) -> None:
     ts = f"{year}-06-15T00:00:00.000000+00:00"
-    line = LineParser().parse(f"{ts} 0x1 <INFO> hello")
+    line = parse_line(f"{ts} 0x1 <INFO> hello")
     assert line is not None
     assert line.log_ts == ts
     assert line.msg == "hello"
@@ -92,11 +92,11 @@ def test_year_the_os_cannot_convert_keeps_the_original_text(year: str) -> None:
     ],
 )
 def test_lines_not_in_the_expected_format_are_rejected(raw: str) -> None:
-    assert LineParser().parse(raw) is None
+    assert parse_line(raw) is None
 
 
 def test_long_lines_are_truncated_before_matching() -> None:
     prefix = f"{stamp()} 0x1 <INFO> "
-    line = LineParser().parse(prefix + "x" * (MAX_LINE_LENGTH * 2))
+    line = parse_line(prefix + "x" * (MAX_LINE_LENGTH * 2))
     assert line is not None
     assert len(prefix) + len(line.msg) == MAX_LINE_LENGTH

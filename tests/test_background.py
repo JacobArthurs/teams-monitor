@@ -15,7 +15,7 @@ from teams_monitor.notifiers.base import DeliveryError, Notifier
 WAIT = 5.0
 
 
-def _alert(name: str, priority: int = 3, kind: AlertKind = AlertKind.NEW_MESSAGE) -> Alert:
+def _alert(name: str, priority: int = 3, kind: AlertKind = AlertKind.NEW_ACTIVITY) -> Alert:
     return Alert(kind, priority, name)
 
 

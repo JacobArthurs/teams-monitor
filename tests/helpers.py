@@ -8,9 +8,8 @@ from pathlib import Path
 
 from teams_monitor.models import Alert, Event, LogLine
 from teams_monitor.notifiers.base import Notifier
-from teams_monitor.parsing import LineParser
-from teams_monitor.signals import SignalMatcher
-from teams_monitor.watchdog import ProcessProbe
+from teams_monitor.parsing import parse_line
+from teams_monitor.signals import match_signal
 
 SAMPLES_PATH = Path(__file__).parent / "data" / "log_samples.json"
 
@@ -95,13 +94,13 @@ def unrelated(at: float = 0.0) -> str:
 
 
 def parse(raw: str) -> LogLine:
-    line = LineParser().parse(raw)
+    line = parse_line(raw)
     assert line is not None, f"line did not parse: {raw}"
     return line
 
 
 def event(raw: str) -> Event:
-    found = SignalMatcher().match(parse(raw))
+    found = match_signal(parse(raw))
     assert found is not None, f"line matched no signal: {raw}"
     return found
 
@@ -143,7 +142,7 @@ class RecordingNotifier(Notifier):
         return [alert.kind.value for alert in self.alerts]
 
 
-class FakeProbe(ProcessProbe):
+class FakeProbe:
     def __init__(self, running: bool | None = True) -> None:
         self.running = running
 

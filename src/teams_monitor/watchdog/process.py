@@ -3,39 +3,31 @@
 from __future__ import annotations
 
 import subprocess
-from abc import ABC, abstractmethod
-from collections.abc import Callable
+from typing import Protocol
 
-Runner = Callable[..., "subprocess.CompletedProcess[str]"]
+TASKLIST_TIMEOUT_SECONDS = 10.0
 
 
-class ProcessProbe(ABC):
-    @abstractmethod
+class ProcessProbe(Protocol):
     def is_running(self) -> bool | None:
         """True or False when known, None when the check itself failed."""
+        ...
 
 
-class TasklistProbe(ProcessProbe):
+class TasklistProbe:
     """Uses the built-in Windows `tasklist` command, no extra dependencies."""
 
-    def __init__(
-        self,
-        image_name: str,
-        runner: Runner = subprocess.run,
-        timeout: float = 10.0,
-    ) -> None:
+    def __init__(self, image_name: str) -> None:
         self._image_name = image_name
-        self._runner = runner
-        self._timeout = timeout
 
     def is_running(self) -> bool | None:
         command = ["tasklist", "/FI", f"IMAGENAME eq {self._image_name}", "/FO", "CSV", "/NH"]
         try:
-            result = self._runner(
+            result = subprocess.run(  # noqa: S603 - a fixed command with no shell
                 command,
                 capture_output=True,
                 text=True,
-                timeout=self._timeout,
+                timeout=TASKLIST_TIMEOUT_SECONDS,
                 check=False,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )

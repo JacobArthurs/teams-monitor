@@ -5,56 +5,60 @@ import subprocess
 import pytest
 
 from teams_monitor.watchdog import TasklistProbe
+from teams_monitor.watchdog.process import TASKLIST_TIMEOUT_SECONDS
 
 
-def _runner(stdout: str = "", returncode: int = 0):
-    def run(command, **kwargs):
-        return subprocess.CompletedProcess(command, returncode, stdout=stdout, stderr="")
+@pytest.fixture
+def fake_run(monkeypatch: pytest.MonkeyPatch):
+    """Replaces subprocess.run with one that returns the given output or raises the given error."""
 
-    return run
+    def install(stdout: str = "", returncode: int = 0, raises: Exception | None = None) -> dict:
+        seen: dict = {}
 
+        def run(command, **kwargs):
+            seen.update(command=command, **kwargs)
+            if raises is not None:
+                raise raises
+            return subprocess.CompletedProcess(command, returncode, stdout=stdout, stderr="")
 
-def _raises(exc: Exception):
-    def run(command, **kwargs):
-        raise exc
+        monkeypatch.setattr("teams_monitor.watchdog.process.subprocess.run", run)
+        return seen
 
-    return run
-
-
-def test_found_in_the_output() -> None:
-    stdout = '"ms-teams.exe","1234","Console","1","200,000 K"\n'
-    assert TasklistProbe("ms-teams.exe", runner=_runner(stdout)).is_running() is True
-
-
-def test_match_ignores_case() -> None:
-    assert TasklistProbe("ms-teams.exe", runner=_runner('"MS-Teams.EXE"')).is_running() is True
+    return install
 
 
-def test_not_found() -> None:
-    stdout = "INFO: No tasks are running which match the specified criteria.\n"
-    assert TasklistProbe("ms-teams.exe", runner=_runner(stdout)).is_running() is False
+def test_found_in_the_output(fake_run) -> None:
+    fake_run('"ms-teams.exe","1234","Console","1","200,000 K"\n')
+    assert TasklistProbe("ms-teams.exe").is_running() is True
 
 
-def test_non_zero_exit_is_unknown() -> None:
-    assert TasklistProbe("x.exe", runner=_runner("x.exe", returncode=1)).is_running() is None
+def test_match_ignores_case(fake_run) -> None:
+    fake_run('"MS-Teams.EXE"')
+    assert TasklistProbe("ms-teams.exe").is_running() is True
+
+
+def test_not_found(fake_run) -> None:
+    fake_run("INFO: No tasks are running which match the specified criteria.\n")
+    assert TasklistProbe("ms-teams.exe").is_running() is False
+
+
+def test_non_zero_exit_is_unknown(fake_run) -> None:
+    fake_run("x.exe", returncode=1)
+    assert TasklistProbe("x.exe").is_running() is None
 
 
 @pytest.mark.parametrize(
     "exc",
     [OSError("no tasklist"), subprocess.TimeoutExpired("tasklist", 10)],
 )
-def test_failed_check_is_unknown(exc: Exception) -> None:
-    assert TasklistProbe("x.exe", runner=_raises(exc)).is_running() is None
+def test_failed_check_is_unknown(fake_run, exc: Exception) -> None:
+    fake_run(raises=exc)
+    assert TasklistProbe("x.exe").is_running() is None
 
 
-def test_command_and_options() -> None:
-    seen = {}
-
-    def run(command, **kwargs):
-        seen.update(command=command, **kwargs)
-        return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
-
-    TasklistProbe("ms-teams.exe", runner=run, timeout=3.0).is_running()
+def test_command_and_options(fake_run) -> None:
+    seen = fake_run()
+    TasklistProbe("ms-teams.exe").is_running()
     assert seen["command"] == [
         "tasklist",
         "/FI",
@@ -63,5 +67,5 @@ def test_command_and_options() -> None:
         "CSV",
         "/NH",
     ]
-    assert seen["timeout"] == 3.0
+    assert seen["timeout"] == TASKLIST_TIMEOUT_SECONDS
     assert seen["check"] is False

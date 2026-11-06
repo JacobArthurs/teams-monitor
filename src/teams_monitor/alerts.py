@@ -6,7 +6,7 @@ from teams_monitor.models import Alert, AlertKind
 
 PRIORITY_INCOMING_CALL = 1
 PRIORITY_MISSED_CALL = 2
-PRIORITY_NEW_MESSAGE = 3
+PRIORITY_NEW_ACTIVITY = 3
 PRIORITY_TEAMS_DOWN = 4
 PRIORITY_MONITOR_ERROR = 4
 PRIORITY_TEST = 5
@@ -30,10 +30,10 @@ def missed_call(call_id: str, log_ts: str) -> Alert:
     )
 
 
-def new_message(unread: int, presence: str, log_ts: str) -> Alert:
+def new_activity(unread: int, presence: str, log_ts: str) -> Alert:
     return Alert(
-        AlertKind.NEW_MESSAGE,
-        PRIORITY_NEW_MESSAGE,
+        AlertKind.NEW_ACTIVITY,
+        PRIORITY_NEW_ACTIVITY,
         f"New activity (unread {unread})",
         {"unread": unread, "presence": presence, "log_ts": log_ts},
     )

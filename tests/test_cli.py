@@ -7,8 +7,7 @@ from pathlib import Path
 import pytest
 
 from teams_monitor import __version__, cli
-from teams_monitor.config import Settings
-from teams_monitor.config_loader import load_settings
+from teams_monitor.config import Settings, load_settings
 from teams_monitor.notifiers import HttpTransport, PermanentDeliveryError
 
 SECRET = "s3cret-token"

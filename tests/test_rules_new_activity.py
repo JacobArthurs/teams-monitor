@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 from helpers import badge, event, parse, stamp, tray_add, unread_count
 
 from teams_monitor.models import AlertKind
-from teams_monitor.rules.new_message import NewMessageRule
+from teams_monitor.rules.new_activity import NewActivityRule
 
 
 class Rig:
@@ -15,7 +15,7 @@ class Rig:
     def __init__(self, clock) -> None:
         self.clock = clock
         self.missed_at: datetime | None = None
-        self.rule = NewMessageRule(lambda: self.missed_at, timedelta(seconds=3), clock)
+        self.rule = NewActivityRule(lambda: self.missed_at, 3.0, clock)
 
     def feed(self, raw: str) -> list:
         return self.rule.on_event(event(raw))
@@ -131,7 +131,7 @@ def test_alert_carries_unread_presence_and_time(rig: Rig) -> None:
     rig.feed(badge(1))
     rig.feed(raw)
     alert = rig.tick_after()[0]
-    assert alert.kind is AlertKind.NEW_MESSAGE
+    assert alert.kind is AlertKind.NEW_ACTIVITY
     assert alert.fields == {"unread": 2, "presence": "Busy", "log_ts": parse(raw).log_ts}
 
 
@@ -266,7 +266,7 @@ def test_line_with_an_invalid_time_is_held_and_released_by_tick(rig: Rig) -> Non
 
 
 def test_custom_hold_is_honored(clock) -> None:
-    rule = NewMessageRule(lambda: None, timedelta(0), clock, hold=timedelta(seconds=10))
+    rule = NewActivityRule(lambda: None, 0.0, clock, hold=10.0)
     rule.on_event(event(badge(1)))
     rule.on_event(event(badge(2)))
     clock.advance(9)

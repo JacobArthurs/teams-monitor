@@ -4,11 +4,11 @@ from datetime import UTC, datetime
 
 from helpers import CALL_A, CALL_B, answered, ended, event, incoming, parse, tray_add, tray_remove
 
-from teams_monitor.health import HealthState
 from teams_monitor.models import AlertKind
 from teams_monitor.rules.incoming_call import IncomingCallRule
 from teams_monitor.rules.missed_call import MissedCallRule
-from teams_monitor.rules.teams_down import TeamsDownRule
+from teams_monitor.rules.tray_icon import TrayIconRule
+from teams_monitor.watchdog import Watchdog
 
 
 def test_incoming_call_alerts_with_id_and_time() -> None:
@@ -107,23 +107,26 @@ def test_last_missed_at_is_set_only_by_a_missed_call() -> None:
     assert rule.last_missed_at == datetime(2026, 11, 3, 17, 53, 50, tzinfo=UTC)
 
 
-def test_teams_down_rule_never_alerts_directly(clock) -> None:
-    health = HealthState(clock)
-    rule = TeamsDownRule(health)
+def test_tray_icon_rule_never_alerts_directly(clock) -> None:
+    rule = TrayIconRule(Watchdog(clock, 600.0))
     assert rule.on_event(event(tray_remove())) == []
     assert rule.on_event(event(tray_add())) == []
 
 
 def test_tray_add_marks_teams_up(clock) -> None:
-    health = HealthState(clock)
-    health.mark_down()
-    TeamsDownRule(health).on_event(event(tray_add()))
-    assert health.is_down is False
+    watchdog = Watchdog(clock, 600.0)
+    rule = TrayIconRule(watchdog)
+    rule.on_event(event(tray_remove()))
+    clock.advance(5)
+    watchdog.check_tray()
+    assert watchdog.is_down is True
+    rule.on_event(event(tray_add()))
+    assert watchdog.is_down is False
 
 
 def test_tray_removal_is_recorded_not_treated_as_down(clock) -> None:
-    health = HealthState(clock)
-    TeamsDownRule(health).on_event(event(tray_remove()))
-    assert health.is_down is False
+    watchdog = Watchdog(clock, 600.0)
+    TrayIconRule(watchdog).on_event(event(tray_remove()))
+    assert watchdog.is_down is False
     clock.advance(5)
-    assert health.take_tray_removed() is True
+    assert len(watchdog.check_tray()) == 1

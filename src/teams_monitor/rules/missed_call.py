@@ -1,4 +1,4 @@
-"""A2: alert when a ringing call ends without having been answered.
+"""Alert when a ringing call ends without having been answered.
 
 Missed, declined and caller-cancelled calls cannot be told apart in the logs.
 """

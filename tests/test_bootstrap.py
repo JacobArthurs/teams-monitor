@@ -12,7 +12,7 @@ from teams_monitor import alerts
 from teams_monitor.bootstrap import build_monitor, build_notifier
 from teams_monitor.config import Settings
 from teams_monitor.notifiers import NullNotifier, PermanentDeliveryError
-from teams_monitor.notifiers.http import HttpTransport
+from teams_monitor.notifiers.transport import HttpTransport
 
 WAIT = 5.0
 

@@ -1,4 +1,4 @@
-"""A1: alert immediately when a call starts ringing, once per call."""
+"""Alert immediately when a call starts ringing, once per call."""
 
 from __future__ import annotations
 
