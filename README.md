@@ -54,14 +54,7 @@ $env:PYTHONPATH = "src"
 
 ## Quick Start
 
-Create your config file. If you installed from PyPI, create a settings folder for it first:
-
-```powershell
-mkdir $env:USERPROFILE\teams-monitor-config
-cd $env:USERPROFILE\teams-monitor-config
-```
-
-If you cloned the repository, stay in the repository folder instead. Your config is gitignored there. Then create the file:
+Create your config file in the current folder. If you cloned the repository, `config.toml` is gitignored there:
 
 ```powershell
 python -m teams_monitor --init-config
@@ -73,7 +66,7 @@ This never overwrites an existing file. Edit `config.toml` to set `[webhook] url
 python -m teams_monitor --test-webhook
 ```
 
-Start the monitor from the folder that holds `config.toml`:
+Start the monitor from the same folder, or pass `--config` from anywhere else:
 
 ```powershell
 python -m teams_monitor
