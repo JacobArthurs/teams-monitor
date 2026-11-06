@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -30,9 +31,22 @@ def test_without_a_console_saves_the_error_and_shows_a_dialog(
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     monkeypatch.setattr(sys, "stderr", None)
     fatal.report_without_console("oops")
-    path = tmp_path / "teams-monitor" / "startup-error.log"
-    assert path.read_text(encoding="utf-8") == "oops\n"
+    path = tmp_path / "teams-monitor" / "error.log"
+    assert path.read_text(encoding="utf-8").endswith(" oops\n")
     assert boxes == [f"oops\n\nSaved to {path}"]
+
+
+def test_each_error_is_added_to_the_file_with_its_time(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, boxes: list[str]
+) -> None:
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr(sys, "stderr", None)
+    fatal.report_without_console("first")
+    fatal.report_without_console("second")
+    text = (tmp_path / "teams-monitor" / "error.log").read_text(encoding="utf-8")
+    stamps, messages = zip(*(line.split(" ", 1) for line in text.splitlines()), strict=True)
+    assert messages == ("first", "second")
+    assert all(datetime.fromisoformat(stamp).tzinfo is not None for stamp in stamps)
 
 
 def test_falls_back_to_the_temp_folder(
@@ -42,7 +56,7 @@ def test_falls_back_to_the_temp_folder(
     monkeypatch.setattr(fatal.tempfile, "gettempdir", lambda: str(tmp_path))
     monkeypatch.setattr(sys, "stderr", None)
     fatal.report_without_console("oops")
-    assert (tmp_path / "teams-monitor" / "startup-error.log").exists()
+    assert (tmp_path / "teams-monitor" / "error.log").exists()
 
 
 def test_dialog_is_still_shown_when_the_file_cannot_be_written(

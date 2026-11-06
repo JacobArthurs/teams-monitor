@@ -23,10 +23,11 @@ class TasklistProbe:
     def is_running(self) -> bool | None:
         command = ["tasklist", "/FI", f"IMAGENAME eq {self._image_name}", "/FO", "CSV", "/NH"]
         try:
-            result = subprocess.run(  # noqa: S603 - a fixed command with no shell
+            result = subprocess.run(
                 command,
                 capture_output=True,
                 text=True,
+                errors="replace",
                 timeout=TASKLIST_TIMEOUT_SECONDS,
                 check=False,
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),

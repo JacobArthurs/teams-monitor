@@ -6,6 +6,7 @@ import ctypes
 import os
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 _MB_ICONERROR = 0x10
@@ -23,10 +24,12 @@ def report_without_console(message: str) -> None:
 
 def _write_error_file(message: str) -> Path | None:
     base = os.environ.get("LOCALAPPDATA") or tempfile.gettempdir()
-    path = Path(base) / "teams-monitor" / "startup-error.log"
+    path = Path(base) / "teams-monitor" / "error.log"
+    stamp = datetime.now().astimezone().isoformat(timespec="seconds")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(message + "\n", encoding="utf-8")
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(f"{stamp} {message}\n")
     except OSError:
         return None
     return path

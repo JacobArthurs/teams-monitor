@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 
 import pytest
 
@@ -54,6 +55,16 @@ def test_non_zero_exit_is_unknown(fake_run) -> None:
 def test_failed_check_is_unknown(fake_run, exc: Exception) -> None:
     fake_run(raises=exc)
     assert TasklistProbe("x.exe").is_running() is None
+
+
+def test_undecodable_output_does_not_break_the_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    real_run = subprocess.run
+    script = "import sys; sys.stdout.buffer.write(b'\\x81 \"ms-teams.exe\"')"
+    monkeypatch.setattr(
+        "teams_monitor.watchdog.process.subprocess.run",
+        lambda command, **kwargs: real_run([sys.executable, "-c", script], **kwargs),
+    )
+    assert TasklistProbe("ms-teams.exe").is_running() is True
 
 
 def test_command_and_options(fake_run) -> None:
