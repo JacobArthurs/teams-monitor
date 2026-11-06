@@ -1,5 +1,3 @@
-"""Runs the fully wired monitor against a real log file, with only time and the probe faked."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -33,7 +31,7 @@ class Rig:
         self.monitor = build_monitor(
             Settings(log_dir=tmp_path, **settings), notifier=recorder, clock=clock, probe=self.probe
         )
-        self.monitor.run_once()  # the first poll treats what already exists as read
+        self.monitor.run_once()
 
     def write(self, *lines: str) -> None:
         with self.log.open("a", encoding="utf-8", newline="") as handle:
@@ -89,7 +87,6 @@ def test_unread_rise_right_after_a_missed_call_is_suppressed(rig: Rig) -> None:
 def test_first_badge_alerts_when_the_count_was_logged_before_the_monitor_started(
     tmp_path: Path, clock, recorder
 ) -> None:
-    # The 2026-11-05 miss: started with no badge line in the log, then a message arrived.
     rig = Rig(tmp_path, clock, recorder, existing=[unrelated(at=0), unread_count(0, at=60)])
     rig.write(badge(1, at=330))
     rig.wait(2)

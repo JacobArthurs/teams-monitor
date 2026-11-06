@@ -1,5 +1,3 @@
-"""Webhook notifier with retry on transient failures."""
-
 from __future__ import annotations
 
 import json
@@ -16,7 +14,6 @@ from teams_monitor.notifiers.transport import HttpTransport
 log = logging.getLogger(__name__)
 
 DEFAULT_RETRY_DELAYS = (1.0, 2.0, 4.0)
-# Honor Retry-After up to this long, so a server cannot hold up later alerts indefinitely.
 MAX_RETRY_AFTER_SECONDS = 30.0
 
 

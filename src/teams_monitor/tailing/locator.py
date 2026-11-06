@@ -1,5 +1,3 @@
-"""Finds the log file Teams is currently writing."""
-
 from __future__ import annotations
 
 from pathlib import Path

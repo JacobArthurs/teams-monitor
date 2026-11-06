@@ -145,7 +145,7 @@ def test_deleted_file_is_forgotten_so_a_new_one_with_its_name_reads_from_zero(lo
     logs.write("MSTeams_b.log", "b\n")
     tailer.poll()
     path.unlink()
-    logs.write("MSTeams_c.log", "c\n")  # switching files is what clears the old offsets
+    logs.write("MSTeams_c.log", "c\n")
     tailer.poll()
     logs.write("MSTeams_a.log", "fresh\n")
     assert tailer.poll() == ["fresh"]

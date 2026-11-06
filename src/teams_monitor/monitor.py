@@ -1,5 +1,3 @@
-"""The run loop: poll the log, run lines through the engine, dispatch alerts."""
-
 from __future__ import annotations
 
 import logging
@@ -19,7 +17,6 @@ log = logging.getLogger(__name__)
 # A gap this long between polls means the machine slept, or the monitor could not run.
 # It sits well above the longest normal iteration, a tasklist call that times out at 10s.
 MIN_SUSPEND_GAP_SECONDS = 60.0
-# This many failed iterations in a row mean a lasting problem, not a passing one.
 FAILURE_ALERT_THRESHOLD = 5
 # Stays below the suspend gap, so waiting after a failure never looks like system sleep.
 MAX_FAILURE_DELAY_SECONDS = 30.0
@@ -49,7 +46,6 @@ class Monitor:
         self._restored = False
 
     def run_once(self) -> None:
-        """One iteration: read new lines, check the tray, then run the full check if it is due."""
         self._handle_suspend()
         if not self._restored:
             self._restore()
@@ -89,7 +85,6 @@ class Monitor:
         self._notifier.close()
 
     def _restore(self) -> None:
-        """Once only, since monitoring can still run without what this restores."""
         self._restored = True
         try:
             self._engine.restore(self._tailer.history())
@@ -97,7 +92,6 @@ class Monitor:
             log.exception("failed to read the existing log, continuing without it")
 
     def _handle_suspend(self) -> None:
-        """After sleep, give Teams a full stale period to write again before judging it."""
         now = self._clock.monotonic()
         gap = now - self._last_iteration
         self._last_iteration = now

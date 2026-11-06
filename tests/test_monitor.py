@@ -165,7 +165,7 @@ def test_long_gap_restarts_the_stale_timer_and_skips_the_check(rig: Rig) -> None
     rig.clock.advance(61)
     rig.monitor.run_once()
     assert rig.watchdog.resumes == 1
-    assert rig.watchdog.lines == []  # sleeping is not log activity
+    assert rig.watchdog.lines == []
     assert rig.watchdog.checks == 0
     rig.clock.advance(30)
     rig.monitor.run_once()
@@ -225,8 +225,6 @@ def test_run_forever_survives_a_failed_iteration_and_stops(clock, caplog) -> Non
 
 
 class ScriptedStop:
-    """Stops after a set number of waits and records how long each one was."""
-
     def __init__(self, iterations: int) -> None:
         self.iterations = iterations
         self.waits: list[float] = []

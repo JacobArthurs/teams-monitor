@@ -81,8 +81,8 @@ def test_blank_lines_are_kept(path: Path) -> None:
 
 
 def test_unicode_line_separator_does_not_split_a_line(path: Path) -> None:
-    path.write_bytes("one still one\n".encode())
-    assert LineReader().read_available(path, 0).lines == ["one still one"]
+    path.write_bytes("onestill one\n".encode())
+    assert LineReader().read_available(path, 0).lines == ["onestill one"]
 
 
 def test_invalid_utf8_is_replaced(path: Path) -> None:
@@ -113,7 +113,6 @@ def test_reads_across_chunks(path: Path) -> None:
 def test_line_larger_than_a_chunk_is_skipped(path: Path) -> None:
     path.write_bytes(b"x" * 20 + b"\nok\n")
     result = LineReader(max_chunk=8).read_available(path, 0)
-    # The whole chunks are dropped, and what is left of the long line arrives as a fragment.
     assert result.lines == ["xxxx", "ok"]
     assert result.offset == 24
 

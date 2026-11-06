@@ -1,5 +1,3 @@
-"""Uses real threads, coordinated with events rather than sleeps."""
-
 from __future__ import annotations
 
 import logging
@@ -20,8 +18,6 @@ def _alert(name: str, priority: int = 3, kind: AlertKind = AlertKind.NEW_ACTIVIT
 
 
 class GatedNotifier(Notifier):
-    """Blocks on the alert named "gate" until released, and can raise on request."""
-
     def __init__(self) -> None:
         self.started = threading.Event()
         self.release = threading.Event()
@@ -47,7 +43,7 @@ class GatedNotifier(Notifier):
 def inner():
     notifier = GatedNotifier()
     yield notifier
-    notifier.release.set()  # never leave a worker thread stuck
+    notifier.release.set()
 
 
 def _hold_lane(notifier: BackgroundNotifier, inner: GatedNotifier, priority: int = 3) -> None:

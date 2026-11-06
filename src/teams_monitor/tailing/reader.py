@@ -1,5 +1,3 @@
-"""Reads newly appended complete lines from a file, starting at a byte offset."""
-
 from __future__ import annotations
 
 import logging
@@ -39,7 +37,6 @@ class LineReader:
             return 0
 
     def read_available(self, path: Path, offset: int, final: bool = False) -> ReadResult:
-        """Read complete lines from offset. With final, also return an unterminated last line."""
         try:
             size = path.stat().st_size
         except OSError:
@@ -68,7 +65,6 @@ class LineReader:
         return ReadResult(lines, offset)
 
     def read_before(self, path: Path, end: int) -> list[str]:
-        """Complete lines from up to one chunk of the file just before the end offset."""
         start = max(0, end - self._max_chunk)
         data = self._read_at(path, start, end - start)
         last_newline = data.rfind(b"\n")

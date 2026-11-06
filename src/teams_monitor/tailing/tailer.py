@@ -1,5 +1,3 @@
-"""Follows the newest Teams log file across rotations."""
-
 from __future__ import annotations
 
 import logging
@@ -32,7 +30,6 @@ class LogTailer:
         self._offsets: dict[Path, int] = {}
 
     def poll(self) -> list[str]:
-        """Return complete lines written since the previous poll."""
         if not self._started:
             self._start()
 
@@ -43,7 +40,7 @@ class LogTailer:
         lines: list[str] = []
         if newest != self._path:
             if self._path is not None:
-                lines += self._drain(final=True)  # finish the file Teams just left
+                lines += self._drain(final=True)
                 log.info("rotated %s to %s", self._path.name, newest.name)
             self._path = newest
             self._forget_deleted_files()
@@ -52,10 +49,6 @@ class LogTailer:
         return lines
 
     def history(self) -> list[str]:
-        """Lines already in the newest file at startup, which poll will not return.
-
-        Empty with from_start, because poll replays that file itself.
-        """
         if not self._started:
             self._start()
         newest = self._locator.newest()

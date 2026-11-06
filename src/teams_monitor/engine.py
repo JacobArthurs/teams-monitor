@@ -1,5 +1,3 @@
-"""Routes raw log lines through parsing, signal matching and alert rules."""
-
 from __future__ import annotations
 
 import logging
@@ -17,8 +15,6 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class BatchResult:
-    """What a batch of raw lines produced. Blank lines count as neither kind."""
-
     alerts: list[Alert]
     recognized: int
     unrecognized: int
@@ -33,7 +29,6 @@ class Engine:
                 self._routes[name].append(rule)
 
     def process(self, raw_lines: Iterable[str]) -> BatchResult:
-        """Run new lines through the rules. A line that fails never stops the ones after it."""
         alerts: list[Alert] = []
         recognized = 0
         unrecognized = 0
@@ -53,7 +48,6 @@ class Engine:
         return BatchResult(alerts, recognized, unrecognized)
 
     def restore(self, raw_lines: Iterable[str]) -> None:
-        """Bring rules up to date from lines written before the monitor started, without alerts."""
         for raw in raw_lines:
             line = parse_line(raw)
             if line is not None:
@@ -61,7 +55,6 @@ class Engine:
                     rule.on_history(event)
 
     def tick(self) -> list[Alert]:
-        """Collect alerts from rules that were waiting for time to pass."""
         return [alert for rule in self._rules for alert in rule.on_tick()]
 
     def _deliveries(self, line: LogLine) -> Iterator[tuple[Event, Rule]]:

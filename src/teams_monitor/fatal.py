@@ -14,7 +14,6 @@ _MB_SETFOREGROUND = 0x10000
 
 
 def report_without_console(message: str) -> None:
-    """Save the error to a file and show a dialog. Does nothing if there is a console."""
     if sys.stderr is not None:
         return
     path = _write_error_file(message)

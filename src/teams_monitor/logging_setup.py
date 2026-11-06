@@ -1,5 +1,3 @@
-"""Application logging configuration."""
-
 from __future__ import annotations
 
 import logging
@@ -12,7 +10,6 @@ LOG_BACKUPS = 3
 
 
 def configure_logging(verbose: bool = False, log_file: Path | None = None) -> None:
-    """Configure the package logger only, leaving third party loggers alone."""
     handler: logging.Handler
     if log_file is not None:
         handler = RotatingFileHandler(

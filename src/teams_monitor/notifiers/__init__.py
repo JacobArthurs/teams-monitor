@@ -1,5 +1,3 @@
-"""Alert delivery."""
-
 from teams_monitor.notifiers.background import BackgroundNotifier
 from teams_monitor.notifiers.base import (
     DeliveryError,

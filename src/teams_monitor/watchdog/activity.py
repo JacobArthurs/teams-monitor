@@ -1,5 +1,3 @@
-"""Tracks when the log last produced lines in the expected format."""
-
 from __future__ import annotations
 
 import logging
@@ -25,17 +23,14 @@ class ActivityTracker:
 
     @property
     def format_suspect(self) -> bool:
-        """True when the log is growing but its recent lines cannot be parsed."""
         return self._unrecognized >= FORMAT_SUSPECT_LINES
 
     def touch(self) -> None:
-        """Record a recognized line."""
         self._last_activity = self._clock.monotonic()
         self._idle_since = self._last_activity
         self._unrecognized = 0
 
     def note_unrecognized(self, count: int) -> None:
-        """Record lines that are not in the expected format. They are not activity."""
         before = self._unrecognized
         self._unrecognized += count
         if before < FORMAT_SUSPECT_LINES <= self._unrecognized:

@@ -1,5 +1,3 @@
-"""Daily time window in which outage checks are active."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,7 +11,6 @@ class ActiveWindow:
 
     @classmethod
     def parse(cls, text: str) -> ActiveWindow:
-        """Parse "HH:MM-HH:MM". The window may wrap past midnight."""
         try:
             raw_start, raw_end = text.split("-")
             start = datetime.strptime(raw_start.strip(), "%H:%M").time()

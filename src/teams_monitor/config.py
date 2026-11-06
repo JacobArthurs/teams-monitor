@@ -1,5 +1,3 @@
-"""Validated runtime settings, and reading them from a TOML config file."""
-
 from __future__ import annotations
 
 import math
@@ -16,12 +14,12 @@ from teams_monitor.window import ActiveWindow
 
 DEFAULT_LOG_DIR = r"%LOCALAPPDATA%\Packages\MSTeams_8wekyb3d8bbwe\LocalCache\Microsoft\MSTeams\Logs"
 DEFAULT_PROCESS_NAME = "ms-teams.exe"
-# Upper limit for time settings. Far larger values overflow the timers they are passed to.
+# Far larger values overflow the timers they are passed to.
 MAX_TIME_VALUE = 1_000_000.0
 
 
 class ConfigError(ValueError):
-    """Settings are invalid."""
+    pass
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,7 +47,6 @@ class Settings:
 
 
 def _check_time(label: str, value: float, allow_zero: bool = False) -> None:
-    # The comparisons are written so that nan fails them too.
     in_range = 0 <= value <= MAX_TIME_VALUE if allow_zero else 0 < value <= MAX_TIME_VALUE
     if not (in_range and math.isfinite(value)):
         lowest = "at least 0" if allow_zero else "greater than 0"
@@ -57,10 +54,7 @@ def _check_time(label: str, value: float, allow_zero: bool = False) -> None:
 
 
 def _check_webhook_url(url: str) -> None:
-    """Reject anything that would only fail when the first alert is sent.
-
-    Error messages never quote the URL because it is a secret.
-    """
+    """Error messages never quote the URL because it is a secret."""
     if not url.isascii() or any(char <= " " or char == "\x7f" for char in url):
         raise ConfigError("webhook URL must not contain spaces or control or non-ASCII characters")
     try:
@@ -92,12 +86,11 @@ def _optional_path(value: Any) -> Path | None:
 
 
 def _number(value: Any) -> float:
-    # bool is a subclass of int, so it must be excluded explicitly.
     if isinstance(value, bool) or not isinstance(value, int | float):
         raise ValueError("must be a number")
     try:
         return float(value)
-    except OverflowError:  # a huge integer. Settings rejects anything out of range.
+    except OverflowError:
         return math.inf
 
 
@@ -111,9 +104,6 @@ def _active_window(value: Any) -> ActiveWindow | None:
     return ActiveWindow.parse(_string(value)) if _string(value) else None
 
 
-# Every accepted key, as the Settings field it sets and how to read it. Anything else is
-# rejected so typos are not silently ignored. Settings holds the defaults, so keys missing
-# from the file are simply not passed on.
 SCHEMA: dict[str, dict[str, tuple[str, Callable[[Any], Any]]]] = {
     "teams": {
         "log_dir": ("log_dir", _path),
@@ -140,7 +130,6 @@ SCHEMA: dict[str, dict[str, tuple[str, Callable[[Any], Any]]]] = {
 
 
 def write_example_config(path: Path) -> None:
-    """Create a starter config. Never overwrites, because the file holds the user's settings."""
     example = resources.files("teams_monitor").joinpath("config.example.toml").read_bytes()
     try:
         with path.open("xb") as handle:

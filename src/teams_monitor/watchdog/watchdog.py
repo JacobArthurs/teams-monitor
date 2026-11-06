@@ -1,5 +1,3 @@
-"""Outage detection. Owns all Teams up/down state, including crashes that write no log line."""
-
 from __future__ import annotations
 
 import logging
@@ -42,27 +40,21 @@ class Watchdog:
             self._activity.note_unrecognized(unrecognized)
 
     def note_tray_added(self) -> None:
-        """Teams added its tray icon, so it is running and any outage is over."""
         self._health.mark_up()
 
     def note_tray_removed(self) -> None:
-        """Teams removed its tray icon. check_tray alerts if the icon stays away."""
         self._health.note_tray_removed()
 
     def note_resume(self) -> None:
-        """The system woke from sleep, so give Teams a full stale period to write again."""
         self._activity.restart_idle()
 
     def check_tray(self) -> list[Alert]:
-        """Alert if the tray icon stayed away past its grace. Cheap enough to run on every poll."""
         if not self._in_window() or not self._health.take_tray_removed():
             return []
         return [alerts.teams_down("tray icon removed")] if self._health.mark_down() else []
 
     def check(self) -> list[Alert]:
-        """The full outage check. It runs a process probe, so it runs less often than check_tray.
-
-        Outside the window it only looks for recovery from an earlier outage. Otherwise that
+        """Outside the window it only looks for recovery from an earlier outage. Otherwise that
         outage would still count as ongoing, and the next one could not alert.
         """
         in_window = self._in_window()

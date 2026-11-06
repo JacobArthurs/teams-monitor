@@ -1,5 +1,3 @@
-"""Notifier contract and delivery errors."""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -8,32 +6,28 @@ from teams_monitor.models import Alert
 
 
 class DeliveryError(Exception):
-    """An alert could not be delivered."""
+    pass
 
 
 class TransientDeliveryError(DeliveryError):
-    """Delivery failed in a way that may succeed on retry (network, 5xx, 429)."""
-
     def __init__(self, message: str, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.retry_after = retry_after
 
 
 class PermanentDeliveryError(DeliveryError):
-    """Delivery failed and retrying will not help (bad URL, 4xx)."""
+    pass
 
 
 class Notifier(ABC):
     @abstractmethod
     def notify(self, alert: Alert) -> None:
-        """Deliver one alert. May raise DeliveryError."""
+        """May raise DeliveryError."""
 
-    def close(self) -> None:  # noqa: B027 - optional hook, intentionally not abstract
-        """Release resources. Default is a no-op."""
+    def close(self) -> None:  # noqa: B027
+        pass
 
 
 class NullNotifier(Notifier):
-    """Sends nothing, for dry runs. The monitor logs every alert before it reaches a notifier."""
-
     def notify(self, alert: Alert) -> None:
         pass

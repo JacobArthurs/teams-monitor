@@ -49,7 +49,6 @@ def test_samples_the_monitor_deliberately_ignores(name: str) -> None:
 
 
 def test_tray_removal_matches_app_exited() -> None:
-    # Uses a synthetic line, see helpers.tray_remove.
     assert event(tray_remove()).signal is SignalName.APP_EXITED
 
 

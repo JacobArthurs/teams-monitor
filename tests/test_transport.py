@@ -1,5 +1,3 @@
-"""Uses a real local server, because urllib's handling of redirects is what is being tested."""
-
 from __future__ import annotations
 
 import socket
@@ -18,8 +16,6 @@ SECRET = "s3cret-token"
 
 
 class _Handler(BaseHTTPRequestHandler):
-    """The last path segment is the status to reply with."""
-
     def do_POST(self) -> None:
         body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
         self.server.requests.append(("POST", self.path, dict(self.headers), body))

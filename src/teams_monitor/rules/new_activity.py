@@ -75,7 +75,6 @@ class NewActivityRule(Rule):
         return settled
 
     def on_tick(self) -> list[Alert]:
-        """Release a held rise once the hold has passed with no fall."""
         held = self._held
         if held is None or self._clock.monotonic() - held.held_at < self._hold:
             return []
@@ -93,7 +92,6 @@ class NewActivityRule(Rule):
     def _on_badge(self, event: Event) -> None:
         unread = int(event.groups["unread"])
         previous, self._last_unread = self._last_unread, unread
-        # The first value seen only sets the baseline. Equal values are refreshes.
         if previous is None:
             log.info("unread baseline set to %d from the first badge, not alerting", unread)
         elif unread < previous:
@@ -106,7 +104,6 @@ class NewActivityRule(Rule):
         self._restarted_at = event.line.ts
 
     def _seed_from_count(self, event: Event) -> bool:
-        """Use the count as the baseline if there is none yet. True if it was used."""
         if self._last_unread is not None or self._is_starting_up(event.line.ts):
             return False
         self._last_unread = int(event.groups["unread"])
@@ -131,7 +128,6 @@ class NewActivityRule(Rule):
         if self._held is None:
             self._held = _HeldRise(alert, previous, event.line.ts, self._clock.monotonic())
         else:
-            # A burst stays one alert with the latest count, and keeps its original deadline.
             self._held.alert = alert
 
     def _on_fall(self, event: Event, unread: int) -> None:

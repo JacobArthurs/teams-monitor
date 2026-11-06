@@ -13,8 +13,6 @@ URL = "https://hooks.example.com/x"
 
 
 class FakeTransport(HttpTransport):
-    """Raises each queued error in turn, then succeeds."""
-
     def __init__(self, *errors: Exception) -> None:
         self.errors = list(errors)
         self.calls: list[tuple[str, bytes]] = []

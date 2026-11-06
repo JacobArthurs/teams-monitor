@@ -1,5 +1,3 @@
-"""HTTP transport used by the webhook notifier."""
-
 from __future__ import annotations
 
 import email.utils
@@ -23,7 +21,7 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 class HttpTransport(Protocol):
     def post_json(self, url: str, body: bytes) -> None:
-        """POST a JSON body. Raises Transient or PermanentDeliveryError on failure."""
+        """Raises Transient or PermanentDeliveryError on failure."""
         ...
 
 
@@ -64,7 +62,6 @@ class UrllibTransport:
 
 
 def parse_retry_after(value: str | None) -> float | None:
-    """Seconds to wait from a Retry-After header (seconds or HTTP date), None if unusable."""
     if value is None:
         return None
     try:

@@ -1,5 +1,3 @@
-"""Checks whether the Teams process is running."""
-
 from __future__ import annotations
 
 import subprocess
@@ -15,8 +13,6 @@ class ProcessProbe(Protocol):
 
 
 class TasklistProbe:
-    """Uses the built-in Windows `tasklist` command, no extra dependencies."""
-
     def __init__(self, image_name: str) -> None:
         self._image_name = image_name
 

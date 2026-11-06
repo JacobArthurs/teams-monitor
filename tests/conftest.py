@@ -1,5 +1,3 @@
-"""Shared fixtures and the isolation every test needs."""
-
 from __future__ import annotations
 
 import logging

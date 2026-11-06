@@ -150,7 +150,7 @@ def test_recovery_needs_activity_after_the_grace_then_allows_a_new_alert(rig: Ri
     rig.clock.advance(30)
     rig.watchdog.note_lines(1, 0)
     assert rig.watchdog.check() == []
-    assert rig.watchdog.is_down is True  # lines this soon may be Teams shutting down
+    assert rig.watchdog.is_down is True
 
     rig.clock.advance(31)
     rig.watchdog.note_lines(1, 0)

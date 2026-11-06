@@ -44,7 +44,6 @@ class _Lane:
         self._thread.join(timeout=timeout)
 
     def abandon(self) -> list[Alert]:
-        """Discard what is left after a timed out join, returning the alerts affected."""
         if not self._thread.is_alive():
             return []
         unfinished = [self._in_flight] if self._in_flight is not None else []
@@ -94,7 +93,6 @@ class BackgroundNotifier(Notifier):
             log.error("notification queue full, dropping %s", alert.kind.value)
 
     def close(self) -> None:
-        """Deliver what is queued, then stop. Waits at most join_timeout seconds in total."""
         lanes = (self._urgent, self._normal)
         for lane in lanes:
             lane.request_stop()

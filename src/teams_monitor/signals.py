@@ -1,5 +1,3 @@
-"""Signal definitions and the function that applies them."""
-
 from __future__ import annotations
 
 import re
@@ -90,7 +88,6 @@ SIGNALS: tuple[Signal, ...] = (
 
 
 def match_signal(line: LogLine) -> Event | None:
-    """Find the signal a log line represents, if any."""
     for signal in SIGNALS:
         event = signal.match(line)
         if event is not None:

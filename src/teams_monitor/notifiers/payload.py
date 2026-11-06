@@ -1,5 +1,3 @@
-"""Builds the JSON body sent to the webhook."""
-
 from __future__ import annotations
 
 from datetime import datetime

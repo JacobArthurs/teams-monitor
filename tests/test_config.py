@@ -217,4 +217,4 @@ def test_missing_file_explains_what_to_do(tmp_path: Path) -> None:
 
 def test_unreadable_path_is_a_config_error(tmp_path: Path) -> None:
     with pytest.raises(ConfigError, match="cannot read"):
-        load_settings(tmp_path)  # a folder, so opening it fails
+        load_settings(tmp_path)

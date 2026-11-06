@@ -1,5 +1,3 @@
-"""Command line entry point. All settings come from the config file."""
-
 from __future__ import annotations
 
 import argparse
@@ -22,7 +20,6 @@ from teams_monitor.notifiers import DeliveryError
 
 log = logging.getLogger(__name__)
 
-# Relative to the working directory, so run it from the folder that holds config.toml.
 DEFAULT_CONFIG_PATH = Path("config.toml")
 
 
@@ -93,7 +90,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def _test_webhook(url: str) -> int:
-    """Send one alert with the normal retries. Output never quotes the URL, which is a secret."""
     try:
         build_webhook(url, SystemClock()).notify(alerts.webhook_test())
     except DeliveryError as exc:

@@ -1,5 +1,3 @@
-"""Alert immediately when a call starts ringing, once per call."""
-
 from __future__ import annotations
 
 from teams_monitor import alerts
@@ -11,7 +9,6 @@ class IncomingCallRule(Rule):
     handles = frozenset({SignalName.CALL_INCOMING, SignalName.CALL_ENDED, SignalName.APP_STARTED})
 
     def __init__(self) -> None:
-        # Forgotten when a call ends or Teams restarts, so this cannot grow without limit.
         self._alerted: set[str] = set()
 
     def on_event(self, event: Event) -> list[Alert]:

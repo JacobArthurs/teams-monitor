@@ -1,5 +1,3 @@
-"""Alert rules, one module per alert."""
-
 from teams_monitor.rules.base import Rule
 from teams_monitor.rules.incoming_call import IncomingCallRule
 from teams_monitor.rules.missed_call import MissedCallRule

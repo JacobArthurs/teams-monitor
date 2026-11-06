@@ -63,7 +63,6 @@ def test_answered_call_is_not_missed() -> None:
 
 
 def test_end_without_a_ring_is_not_missed() -> None:
-    # An outgoing call ends this way.
     assert MissedCallRule().on_event(event(ended(CALL_A))) == []
 
 

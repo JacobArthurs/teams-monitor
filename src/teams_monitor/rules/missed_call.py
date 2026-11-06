@@ -1,7 +1,4 @@
-"""Alert when a ringing call ends without having been answered.
-
-Missed, declined and caller-cancelled calls cannot be told apart in the logs.
-"""
+"""Missed, declined and caller-cancelled calls cannot be told apart in the logs."""
 
 from __future__ import annotations
 
@@ -28,7 +25,6 @@ class MissedCallRule(Rule):
 
     @property
     def last_missed_at(self) -> datetime | None:
-        """Log timestamp of the most recent missed call, used by other rules."""
         return self._last_missed_at
 
     def on_event(self, event: Event) -> list[Alert]:

@@ -11,8 +11,6 @@ from teams_monitor.watchdog.process import TASKLIST_TIMEOUT_SECONDS
 
 @pytest.fixture
 def fake_run(monkeypatch: pytest.MonkeyPatch):
-    """Replaces subprocess.run with one that returns the given output or raises the given error."""
-
     def install(stdout: str = "", returncode: int = 0, raises: Exception | None = None) -> dict:
         seen: dict = {}
 

@@ -10,8 +10,6 @@ from teams_monitor.rules.new_activity import NewActivityRule
 
 
 class Rig:
-    """A rule plus an adjustable missed call time."""
-
     def __init__(self, clock) -> None:
         self.clock = clock
         self.missed_at: datetime | None = None

@@ -18,8 +18,6 @@ WAIT = 5.0
 
 
 class RecordingTransport(HttpTransport):
-    """Holds teams_down posts until released, so one can be left stuck retrying."""
-
     instances: list[RecordingTransport] = []
 
     def __init__(self) -> None:

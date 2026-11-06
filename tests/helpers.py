@@ -1,5 +1,3 @@
-"""Test doubles and builders for Teams log lines."""
-
 from __future__ import annotations
 
 import json
@@ -21,13 +19,11 @@ _BASE = datetime(2026, 11, 3, 17, 53, 45)
 
 
 def load_samples() -> dict[str, str]:
-    """The real log lines supplied for each event, keyed by event name."""
     entries = json.loads(SAMPLES_PATH.read_text(encoding="utf-8"))
     return {entry["event"]: entry["example"] for entry in entries}
 
 
 def stamp(at: float = 0.0) -> str:
-    """A log timestamp `at` seconds after the base time."""
     return (_BASE + timedelta(seconds=at)).isoformat(timespec="microseconds") + "-05:00"
 
 
@@ -106,8 +102,6 @@ def event(raw: str) -> Event:
 
 
 class FakeClock:
-    """A clock that only moves when told to."""
-
     def __init__(self) -> None:
         self._monotonic = 1000.0
         self._now = datetime(2026, 11, 3, 12, 0, tzinfo=UTC)

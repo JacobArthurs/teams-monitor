@@ -1,5 +1,3 @@
-"""Plain data types shared across the package. No behavior lives here."""
-
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -9,8 +7,6 @@ from enum import StrEnum
 
 
 class SignalName(StrEnum):
-    """Log patterns the monitor recognizes."""
-
     CALL_INCOMING = "call_incoming"
     CALL_ANSWERED = "call_answered"
     CALL_ENDED = "call_ended"
@@ -21,11 +17,9 @@ class SignalName(StrEnum):
 
 
 class AlertKind(StrEnum):
-    """Alerts the monitor can raise."""
-
     INCOMING_CALL = "incoming_call"
     MISSED_CALL = "missed_call"
-    # The log cannot tell what the activity was. The value keeps its old name for webhook payloads.
+    # The value keeps its old name for webhook payloads.
     NEW_ACTIVITY = "new_message"
     TEAMS_DOWN = "teams_down"
     MONITOR_ERROR = "monitor_error"
@@ -34,8 +28,6 @@ class AlertKind(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class LogLine:
-    """One parsed Teams log line."""
-
     log_ts: str  # the line's time in local time, or its original text if that is invalid
     ts: datetime | None
     level: str
@@ -44,8 +36,6 @@ class LogLine:
 
 @dataclass(frozen=True, slots=True)
 class Event:
-    """A log line that matched a known signal, with its named regex groups."""
-
     signal: SignalName
     line: LogLine
     groups: Mapping[str, str]
@@ -53,8 +43,6 @@ class Event:
 
 @dataclass(frozen=True, slots=True)
 class Alert:
-    """Something worth telling the user about."""
-
     kind: AlertKind
     priority: int
     text: str

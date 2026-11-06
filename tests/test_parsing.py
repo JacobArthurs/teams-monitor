@@ -7,7 +7,6 @@ from helpers import load_samples, stamp
 
 from teams_monitor.parsing import MAX_LINE_LENGTH, parse_line, parse_timestamp
 
-# Teams writes UTC clock time and labels it with the local offset, so each label is ignored.
 EXPECTED = {
     "incoming_call": (datetime(2026, 11, 3, 17, 53, 45, 38815, UTC), "INFO"),
     "call_answered": (datetime(2026, 10, 13, 17, 41, 22, 201226, UTC), "INFO"),

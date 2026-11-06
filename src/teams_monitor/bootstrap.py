@@ -1,5 +1,3 @@
-"""Composition root: the only module that knows every concrete class."""
-
 from __future__ import annotations
 
 import logging
@@ -62,7 +60,6 @@ def build_monitor(
     clock: Clock | None = None,
     probe: ProcessProbe | None = None,
 ) -> Monitor:
-    """Wire up a Monitor. Notifier, clock and probe can be overridden for tests."""
     clock = clock or SystemClock()
     notifier = notifier or build_notifier(settings, clock)
     if probe is None and settings.process_name:

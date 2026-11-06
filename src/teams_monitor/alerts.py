@@ -1,5 +1,3 @@
-"""Alert constructors. Single place that owns alert priorities and wording."""
-
 from __future__ import annotations
 
 from teams_monitor.models import Alert, AlertKind
