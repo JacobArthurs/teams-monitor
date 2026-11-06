@@ -19,7 +19,7 @@ class TasklistProbe:
     def is_running(self) -> bool | None:
         command = ["tasklist", "/FI", f"IMAGENAME eq {self._image_name}", "/FO", "CSV", "/NH"]
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S603
                 command,
                 capture_output=True,
                 text=True,

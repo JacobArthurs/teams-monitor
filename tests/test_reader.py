@@ -81,8 +81,8 @@ def test_blank_lines_are_kept(path: Path) -> None:
 
 
 def test_unicode_line_separator_does_not_split_a_line(path: Path) -> None:
-    path.write_bytes("onestill one\n".encode())
-    assert LineReader().read_available(path, 0).lines == ["onestill one"]
+    path.write_bytes("one\u2028still one\n".encode())
+    assert LineReader().read_available(path, 0).lines == ["one\u2028still one"]
 
 
 def test_invalid_utf8_is_replaced(path: Path) -> None:
