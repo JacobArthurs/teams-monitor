@@ -9,14 +9,14 @@ from teams_monitor.parsing import MAX_LINE_LENGTH, LineParser, parse_timestamp
 
 # Teams writes UTC clock time and labels it with the local offset, so each label is ignored.
 EXPECTED = {
-    "incoming_call": (datetime(2026, 11, 3, 17, 53, 45, 38815, UTC), "0x00003e44", "INFO"),
-    "call_answered": (datetime(2026, 10, 13, 17, 41, 22, 201226, UTC), "0x000048d8", "INFO"),
-    "call_ended": (datetime(2026, 11, 3, 17, 54, 6, 973853, UTC), "0x00003e44", "INFO"),
-    "new_message": (datetime(2026, 10, 23, 14, 5, 44, 309669, UTC), "0x00009494", "DBG"),
-    "unread_count": (datetime(2026, 11, 5, 18, 6, 50, 596199, UTC), "0x00006ee8", "INFO"),
-    "notification_popup": (datetime(2026, 11, 3, 17, 53, 45, 56458, UTC), "0x000040ec", "INFO"),
-    "app_started": (datetime(2026, 10, 6, 12, 47, 39, 30894, UTC), "0x00004ac8", "INFO"),
-    "app_quit": (datetime(2026, 10, 21, 17, 16, 24, 952252, UTC), "0x000009b4", "INFO"),
+    "incoming_call": (datetime(2026, 11, 3, 17, 53, 45, 38815, UTC), "INFO"),
+    "call_answered": (datetime(2026, 10, 13, 17, 41, 22, 201226, UTC), "INFO"),
+    "call_ended": (datetime(2026, 11, 3, 17, 54, 6, 973853, UTC), "INFO"),
+    "new_message": (datetime(2026, 10, 23, 14, 5, 44, 309669, UTC), "DBG"),
+    "unread_count": (datetime(2026, 11, 5, 18, 6, 50, 596199, UTC), "INFO"),
+    "notification_popup": (datetime(2026, 11, 3, 17, 53, 45, 56458, UTC), "INFO"),
+    "app_started": (datetime(2026, 10, 6, 12, 47, 39, 30894, UTC), "INFO"),
+    "app_quit": (datetime(2026, 10, 21, 17, 16, 24, 952252, UTC), "INFO"),
 }
 
 
@@ -27,10 +27,9 @@ def test_every_sample_has_an_expectation() -> None:
 @pytest.mark.parametrize("name", EXPECTED)
 def test_real_samples_parse(name: str) -> None:
     line = LineParser().parse(load_samples()[name])
-    ts, thread, level = EXPECTED[name]
+    ts, level = EXPECTED[name]
     assert line is not None
     assert line.ts == ts
-    assert line.thread == thread
     assert line.level == level
 
 
@@ -101,10 +100,3 @@ def test_long_lines_are_truncated_before_matching() -> None:
     line = LineParser().parse(prefix + "x" * (MAX_LINE_LENGTH * 2))
     assert line is not None
     assert len(prefix) + len(line.msg) == MAX_LINE_LENGTH
-
-
-def test_custom_max_length_is_honored() -> None:
-    prefix = f"{stamp()} 0x1 <INFO> "
-    line = LineParser(max_length=len(prefix) + 3).parse(prefix + "abcdef")
-    assert line is not None
-    assert line.msg == "abc"

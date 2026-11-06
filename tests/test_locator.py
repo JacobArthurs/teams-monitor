@@ -12,20 +12,11 @@ def _write(path: Path, mtime: float = 1_000_000.0) -> Path:
     return path
 
 
-def test_directory_property(tmp_path: Path) -> None:
-    assert LogLocator(tmp_path).directory == tmp_path
-
-
 def test_existing_only_includes_matching_files(tmp_path: Path) -> None:
     log = _write(tmp_path / "MSTeams_1.log")
     _write(tmp_path / "other.log")
     _write(tmp_path / "MSTeams_1.txt")
     assert LogLocator(tmp_path).existing() == [log]
-
-
-def test_custom_pattern(tmp_path: Path) -> None:
-    log = _write(tmp_path / "custom.txt")
-    assert LogLocator(tmp_path, pattern="*.txt").existing() == [log]
 
 
 def test_newest_uses_the_modified_time_not_the_name(tmp_path: Path) -> None:

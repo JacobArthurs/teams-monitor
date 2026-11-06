@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import threading
 from pathlib import Path
 
@@ -8,6 +9,9 @@ import pytest
 from teams_monitor import __version__, cli
 from teams_monitor.config import Settings
 from teams_monitor.config_loader import load_settings
+from teams_monitor.notifiers import HttpTransport, PermanentDeliveryError
+
+SECRET = "s3cret-token"
 
 
 @pytest.fixture
@@ -65,6 +69,49 @@ def test_init_config_reports_an_unwritable_path(tmp_path: Path, capsys) -> None:
         cli.main(["--init-config", "--config", str(tmp_path / "missing" / "config.toml")])
     assert caught.value.code == 2
     assert "cannot create" in capsys.readouterr().err
+
+
+class _Transport(HttpTransport):
+    error: Exception | None = None
+    bodies: list[dict] = []
+
+    def post_json(self, url: str, body: bytes) -> None:
+        if self.error is not None:
+            raise self.error
+        type(self).bodies.append(json.loads(body))
+
+
+@pytest.fixture
+def webhook_config(config: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    monkeypatch.setattr("teams_monitor.bootstrap.UrllibTransport", _Transport)
+    monkeypatch.setattr(_Transport, "error", None)
+    monkeypatch.setattr(_Transport, "bodies", [])
+    monkeypatch.setattr(cli, "_run", lambda settings: pytest.fail("the monitor must not start"))
+    config.write_text(f'[webhook]\nurl = "https://x.test/{SECRET}"\n', encoding="utf-8")
+    return config
+
+
+def test_test_webhook_sends_one_alert(webhook_config: Path, no_logging_setup, capsys) -> None:
+    assert cli.main(["--test-webhook", "--config", str(webhook_config)]) == 0
+    assert [body["alert"] for body in _Transport.bodies] == ["test"]
+    out = capsys.readouterr().out
+    assert "Test alert sent" in out
+    assert SECRET not in out
+
+
+def test_test_webhook_reports_a_failure(webhook_config: Path, no_logging_setup, capsys) -> None:
+    _Transport.error = PermanentDeliveryError("HTTP 404")
+    assert cli.main(["--test-webhook", "--config", str(webhook_config)]) == 1
+    err = capsys.readouterr().err
+    assert "Webhook test failed: HTTP 404" in err
+    assert SECRET not in err
+
+
+def test_test_webhook_needs_a_url(config: Path, no_logging_setup, capsys) -> None:
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["--test-webhook", "--config", str(config)])
+    assert caught.value.code == 2
+    assert "[webhook] url" in capsys.readouterr().err
 
 
 def test_unknown_flag_exits_with_2() -> None:

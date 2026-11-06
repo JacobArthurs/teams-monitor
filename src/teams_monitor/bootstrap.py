@@ -29,18 +29,18 @@ from teams_monitor.watchdog import ActivityTracker, ProcessProbe, TasklistProbe,
 log = logging.getLogger(__name__)
 
 
+def build_webhook(url: str, clock: Clock) -> WebhookNotifier:
+    if url.startswith("http://"):
+        log.warning("webhook URL uses plain http, alerts are sent unencrypted")
+    return WebhookNotifier(url, PayloadBuilder(socket.gethostname(), clock), UrllibTransport())
+
+
 def build_notifier(settings: Settings, clock: Clock) -> Notifier:
     if not settings.webhook_url:
         log.warning("no webhook configured, running in dry-run mode (alerts are only logged)")
         return NullNotifier()
-    if settings.webhook_url.startswith("http://"):
-        log.warning("webhook URL uses plain http, alerts are sent unencrypted")
     return BackgroundNotifier(
-        WebhookNotifier(
-            settings.webhook_url,
-            PayloadBuilder(socket.gethostname(), clock),
-            UrllibTransport(),
-        ),
+        build_webhook(settings.webhook_url, clock),
         urgent_max_priority=alerts.PRIORITY_MISSED_CALL,
     )
 

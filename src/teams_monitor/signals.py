@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from collections.abc import Iterable
 from dataclasses import dataclass
 
 from teams_monitor.models import Event, LogLine, SignalName
@@ -51,7 +50,7 @@ DEFAULT_SIGNALS: tuple[Signal, ...] = (
         "INFO",
         _compile(
             r"^TeamsCallTracker: Call ended: (?P<call_id>{GUID}) "
-            r"\(remaining: (?P<remaining>\d+)\)"
+            r"\(remaining: \d+\)"
         ),
     ),
     Signal(
@@ -59,7 +58,7 @@ DEFAULT_SIGNALS: tuple[Signal, ...] = (
         "DBG",
         _compile(
             r"^TaskbarBadgeServiceLegacy:Work: SetBadge Setting badge: "
-            r"NumericBadge\{(?P<unread>\d+)\}, overlay: (?P<overlay_items>\d+) items, "
+            r"NumericBadge\{(?P<unread>\d+)\}, overlay: \d+ items, "
             r"status (?P<presence>.+?)\s*$"
         ),
     ),
@@ -94,9 +93,9 @@ DEFAULT_SIGNALS: tuple[Signal, ...] = (
 class SignalMatcher:
     """Finds the signal a log line represents, if any. Indexed by log level."""
 
-    def __init__(self, signals: Iterable[Signal] = DEFAULT_SIGNALS) -> None:
+    def __init__(self) -> None:
         self._by_level: dict[str, list[Signal]] = defaultdict(list)
-        for signal in signals:
+        for signal in DEFAULT_SIGNALS:
             self._by_level[signal.level].append(signal)
 
     def match(self, line: LogLine) -> Event | None:

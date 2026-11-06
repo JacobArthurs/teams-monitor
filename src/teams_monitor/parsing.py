@@ -11,7 +11,7 @@ MAX_LINE_LENGTH = 4096
 
 _LINE = re.compile(
     r"^(?P<ts>\d{4}-\d\d-\d\dT[\d:.]+[+-]\d\d:\d\d) "
-    r"(?P<thread>0x[0-9a-f]+) "
+    r"0x[0-9a-f]+ "
     r"<(?P<level>[A-Z]+)>\s+(?P<msg>.*)$"
 )
 
@@ -37,18 +37,14 @@ def _local_text(ts: datetime | None, original: str) -> str:
 class LineParser:
     """Parses one log line. Lines are truncated first to bound regex work."""
 
-    def __init__(self, max_length: int = MAX_LINE_LENGTH) -> None:
-        self._max_length = max_length
-
     def parse(self, raw: str) -> LogLine | None:
-        found = _LINE.match(raw[: self._max_length])
+        found = _LINE.match(raw[:MAX_LINE_LENGTH])
         if found is None:
             return None
         ts = parse_timestamp(found["ts"])
         return LogLine(
             log_ts=_local_text(ts, found["ts"]),
             ts=ts,
-            thread=found["thread"],
             level=found["level"],
             msg=found["msg"],
         )

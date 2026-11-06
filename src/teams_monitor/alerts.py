@@ -8,6 +8,8 @@ PRIORITY_INCOMING_CALL = 1
 PRIORITY_MISSED_CALL = 2
 PRIORITY_NEW_MESSAGE = 3
 PRIORITY_TEAMS_DOWN = 4
+PRIORITY_MONITOR_ERROR = 4
+PRIORITY_TEST = 5
 
 
 def incoming_call(call_id: str, log_ts: str) -> Alert:
@@ -44,3 +46,16 @@ def teams_down(reason: str) -> Alert:
         f"Teams down: {reason}",
         {"reason": reason},
     )
+
+
+def monitor_error(failures: int) -> Alert:
+    return Alert(
+        AlertKind.MONITOR_ERROR,
+        PRIORITY_MONITOR_ERROR,
+        f"Monitor failing: {failures} checks in a row failed, so alerts may be missed",
+        {"failures": failures},
+    )
+
+
+def webhook_test() -> Alert:
+    return Alert(AlertKind.TEST, PRIORITY_TEST, "Test alert: the webhook works")

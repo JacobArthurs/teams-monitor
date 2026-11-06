@@ -23,7 +23,7 @@ Homepage = "https://github.com/JacobArthurs/teams-monitor"
 Issues = "https://github.com/JacobArthurs/teams-monitor/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff"]
+dev = ["pytest>=8", "ruff==0.17.3", "mypy==2.4.1"]
 
 [project.scripts]
 teams-monitor = "teams_monitor.cli:main"
@@ -40,6 +40,10 @@ teams_monitor = ["config.example.toml"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.mypy]
+files = ["src"]
+strict = true
 
 [tool.ruff]
 line-length = 100

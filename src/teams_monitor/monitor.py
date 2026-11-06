@@ -6,6 +6,7 @@ import logging
 import threading
 from collections.abc import Iterable, Sequence
 
+from teams_monitor import alerts
 from teams_monitor.clock import Clock
 from teams_monitor.engine import Engine
 from teams_monitor.models import Alert, LogLine
@@ -18,6 +19,10 @@ log = logging.getLogger(__name__)
 # A gap this long between polls means the machine slept, or the monitor could not run.
 # It sits well above the longest normal iteration, a tasklist call that times out at 10s.
 MIN_SUSPEND_GAP_SECONDS = 60.0
+# This many failed iterations in a row mean a lasting problem, not a passing one.
+FAILURE_ALERT_THRESHOLD = 5
+# Stays below the suspend gap, so waiting after a failure never looks like system sleep.
+MAX_FAILURE_DELAY_SECONDS = 30.0
 
 
 class Monitor:
@@ -64,16 +69,30 @@ class Monitor:
 
     def run_forever(self, stop: threading.Event) -> None:
         log.info("monitor started")
+        failures = 0
+        delay = self._poll_interval
         while not stop.is_set():
             try:
                 self.run_once()
+                failures = 0
+                delay = self._poll_interval
             except Exception:
-                log.exception("monitor iteration failed")
-            stop.wait(self._poll_interval)
+                failures += 1
+                log.exception("monitor iteration failed (%d in a row)", failures)
+                if failures == FAILURE_ALERT_THRESHOLD:
+                    self._alert_failing(failures)
+                delay = max(self._poll_interval, min(delay * 2, MAX_FAILURE_DELAY_SECONDS))
+            stop.wait(delay)
         log.info("monitor stopping")
 
     def close(self) -> None:
         self._notifier.close()
+
+    def _alert_failing(self, failures: int) -> None:
+        try:
+            self._dispatch([alerts.monitor_error(failures)])
+        except Exception:
+            log.exception("failed to send the monitor error alert")
 
     def _restore(self) -> None:
         """Once only, since monitoring can still run without what this restores."""
@@ -125,8 +144,8 @@ class Monitor:
             log.exception("failed to parse a log line, continuing with the next one")
             return None
 
-    def _dispatch(self, alerts: Iterable[Alert]) -> None:
-        for alert in alerts:
+    def _dispatch(self, pending: Iterable[Alert]) -> None:
+        for alert in pending:
             # Logged here, not on a delivery thread, so a retrying alert cannot delay this line.
             log.info("ALERT %s p%d: %s", alert.kind.value, alert.priority, alert.text)
             self._notifier.notify(alert)

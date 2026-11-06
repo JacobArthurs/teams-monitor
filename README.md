@@ -67,7 +67,13 @@ If you cloned the repository, stay in the repository folder instead. Your config
 python -m teams_monitor --init-config
 ```
 
-This never overwrites an existing file. Edit `config.toml` to set `[webhook] url`, then start the monitor from the folder that holds it:
+This never overwrites an existing file. Edit `config.toml` to set `[webhook] url`, then check that alerts reach you:
+
+```powershell
+python -m teams_monitor --test-webhook
+```
+
+Start the monitor from the folder that holds `config.toml`:
 
 ```powershell
 python -m teams_monitor
@@ -88,7 +94,7 @@ To try it without sending anything, leave `url` empty. It then runs in dry-run m
 ## Usage
 
 ```powershell
-python -m teams_monitor [--config PATH] [--init-config]
+python -m teams_monitor [--config PATH] [--init-config] [--test-webhook]
 ```
 
 The monitor runs until it is stopped. Once installed with pip, `teams-monitor` also works if Python's `Scripts` folder is on your `PATH`, so `python -m teams_monitor` is more reliable.
@@ -97,6 +103,7 @@ The monitor runs until it is stopped. Once installed with pip, `teams-monitor` a
 | ---- | ----------- |
 | `--config` | Path to the config file (default: `config.toml` in the current folder) |
 | `--init-config` | Create a starter config file at the `--config` path and exit. Never overwrites an existing file. |
+| `--test-webhook` | Send one test alert to `[webhook] url` and exit. Exits with 1 if delivery fails. |
 | `--version` | Print the version and exit |
 | `-h, --help` | Show help and exit |
 
@@ -110,6 +117,9 @@ Priority 1 is the most urgent.
 | Missed call | 2 | A ringing call ends without being answered |
 | New activity | 3 | The taskbar unread count rises and is still up 2 seconds later |
 | Teams down | 4 | The tray icon is removed and not re-added within 5 seconds, `ms-teams.exe` isn't running, or the log has no line in the expected format for `stale_minutes` |
+| Monitor error | 4 | The monitor's own loop fails 5 times in a row, so other alerts may be missed |
+
+After a failure the loop waits longer before each retry, up to 30 seconds, so a monitor error fires about 15 seconds into a lasting problem. It fires again only if the loop recovers and then fails 5 more times in a row. `active_hours` doesn't affect it.
 
 Teams down fires once per outage. No alert is sent when Teams recovers, so a later outage is the next thing you'd hear about.
 
@@ -177,6 +187,8 @@ Each alert type adds its own fields:
 | `incoming_call`, `missed_call` | `call_id`, `log_ts` |
 | `new_message` (New activity) | `unread`, `presence`, `log_ts` |
 | `teams_down` | `reason` |
+| `monitor_error` | `failures` |
+| `test` (from `--test-webhook`) | None |
 
 The `reason` field on `teams_down` tells you what triggered the alert:
 
@@ -197,7 +209,7 @@ The `reason` field on `teams_down` tells you what triggered the alert:
 
 Each attempt times out after 5 seconds.
 
-Call alerts have their own delivery thread, so they never wait behind activity or outage alerts. On a dead endpoint, one alert can still take up to 27 seconds to give up, and a second call alert would wait behind the first.
+Call alerts have their own delivery thread, so they never wait behind activity or outage alerts. On a dead endpoint, one alert can still take up to 27 seconds to give up, and a second call alert would wait behind the first. If the endpoint also sends the longest `Retry-After`, that rises to 110 seconds: 4 attempts at 5 seconds plus 3 waits at 30 seconds.
 
 At shutdown, queued alerts get up to 15 seconds to send. Any that don't are named in the log.
 
@@ -207,6 +219,7 @@ At shutdown, queued alerts get up to 15 seconds to send. Any that don't are name
 | ------- | ------------- |
 | `config file not found` | Run the monitor from the folder that holds `config.toml`, pass `--config`, or create the file with `--init-config` |
 | `Teams log folder not found` | Set `[teams] log_dir` to the folder containing the `MSTeams_*.log` files |
+| Not sure alerts reach you | Run `python -m teams_monitor --test-webhook` |
 | No activity alerts | Check that your log contains unread count lines, using the command below |
 | `delivery of ... failed: HTTP 4xx` | Check `[webhook] url`. The endpoint rejected the alert, so it isn't retried. |
 | The webhook URL redirects | Set `[webhook] url` to the final address |

@@ -21,12 +21,14 @@ class SignalName(StrEnum):
 
 
 class AlertKind(StrEnum):
-    """Alerts the monitor can raise (A1 to A4)."""
+    """Alerts the monitor can raise."""
 
     INCOMING_CALL = "incoming_call"
     MISSED_CALL = "missed_call"
     NEW_MESSAGE = "new_message"
     TEAMS_DOWN = "teams_down"
+    MONITOR_ERROR = "monitor_error"
+    TEST = "test"
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,7 +37,6 @@ class LogLine:
 
     log_ts: str  # the line's time in local time, or its original text if that is invalid
     ts: datetime | None
-    thread: str
     level: str
     msg: str
 

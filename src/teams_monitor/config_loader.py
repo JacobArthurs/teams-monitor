@@ -5,34 +5,78 @@ from __future__ import annotations
 import math
 import os
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Callable
 from importlib import resources
 from pathlib import Path
 from typing import Any
 
-from teams_monitor.config import (
-    DEFAULT_LOG_DIR,
-    DEFAULT_PROCESS_NAME,
-    ConfigError,
-    Settings,
-)
+from teams_monitor.config import DEFAULT_LOG_DIR, ConfigError, Settings
 from teams_monitor.window import ActiveWindow
 
-# Every accepted section and key. Anything else is rejected so typos are not silently ignored.
-SCHEMA: dict[str, frozenset[str]] = {
-    "teams": frozenset({"log_dir", "process"}),
-    "webhook": frozenset({"url"}),
-    "monitoring": frozenset(
-        {
-            "poll_seconds",
-            "check_interval_seconds",
-            "stale_minutes",
-            "active_hours",
-            "suppress_after_missed_seconds",
-        }
-    ),
-    "logging": frozenset({"file", "verbose"}),
-    "debug": frozenset({"from_start"}),
+
+def _string(value: Any) -> str:
+    if not isinstance(value, str):
+        raise ValueError("must be a string")
+    return value
+
+
+def _optional_string(value: Any) -> str | None:
+    return _string(value) or None
+
+
+def _path(value: Any) -> Path:
+    return Path(os.path.expandvars(_string(value)))
+
+
+def _optional_path(value: Any) -> Path | None:
+    return _path(value) if _string(value) else None
+
+
+def _number(value: Any) -> float:
+    # bool is a subclass of int, so it must be excluded explicitly.
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise ValueError("must be a number")
+    try:
+        return float(value)
+    except OverflowError:  # a huge integer. Settings rejects anything out of range.
+        return math.inf
+
+
+def _boolean(value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError("must be true or false")
+    return value
+
+
+def _active_window(value: Any) -> ActiveWindow | None:
+    return ActiveWindow.parse(_string(value)) if _string(value) else None
+
+
+# Every accepted key, as the Settings field it sets and how to read it. Anything else is
+# rejected so typos are not silently ignored. Settings holds the defaults, so keys missing
+# from the file are simply not passed on.
+SCHEMA: dict[str, dict[str, tuple[str, Callable[[Any], Any]]]] = {
+    "teams": {
+        "log_dir": ("log_dir", _path),
+        "process": ("process_name", _optional_string),
+    },
+    "webhook": {
+        "url": ("webhook_url", _optional_string),
+    },
+    "monitoring": {
+        "poll_seconds": ("poll_interval", _number),
+        "check_interval_seconds": ("check_interval", _number),
+        "stale_minutes": ("stale_minutes", _number),
+        "active_hours": ("active_window", _active_window),
+        "suppress_after_missed_seconds": ("suppress_after_missed", _number),
+    },
+    "logging": {
+        "file": ("log_file", _optional_path),
+        "verbose": ("verbose", _boolean),
+    },
+    "debug": {
+        "from_start": ("from_start", _boolean),
+    },
 }
 
 
@@ -49,37 +93,21 @@ def write_example_config(path: Path) -> None:
 
 
 def load_settings(path: Path) -> Settings:
-    data = _read(path)
-    _reject_unknown(data)
-
-    teams = _table(data, "teams")
-    webhook = _table(data, "webhook")
-    monitoring = _table(data, "monitoring")
-    logging_ = _table(data, "logging")
-    debug = _table(data, "debug")
-
-    active_hours = _string(monitoring, "monitoring", "active_hours", "")
-    log_file = _string(logging_, "logging", "file", "")
-    try:
-        active_window = ActiveWindow.parse(active_hours) if active_hours else None
-    except ValueError as exc:
-        raise ConfigError(f"[monitoring] active_hours: {exc}") from exc
-
-    return Settings(
-        log_dir=Path(os.path.expandvars(_string(teams, "teams", "log_dir", DEFAULT_LOG_DIR))),
-        process_name=_string(teams, "teams", "process", DEFAULT_PROCESS_NAME) or None,
-        webhook_url=_string(webhook, "webhook", "url", "") or None,
-        poll_interval=_number(monitoring, "monitoring", "poll_seconds", 0.5),
-        check_interval=_number(monitoring, "monitoring", "check_interval_seconds", 30.0),
-        stale_minutes=_number(monitoring, "monitoring", "stale_minutes", 10.0),
-        active_window=active_window,
-        suppress_after_missed=_number(
-            monitoring, "monitoring", "suppress_after_missed_seconds", 3.0
-        ),
-        log_file=Path(os.path.expandvars(log_file)) if log_file else None,
-        verbose=_boolean(logging_, "logging", "verbose", False),
-        from_start=_boolean(debug, "debug", "from_start", False),
-    )
+    values: dict[str, Any] = {"log_dir": _path(DEFAULT_LOG_DIR)}
+    for section, content in _read(path).items():
+        if section not in SCHEMA:
+            raise ConfigError(f"unknown section [{section}]")
+        if not isinstance(content, dict):
+            raise ConfigError(f"[{section}] must be a table")
+        for key, value in content.items():
+            if key not in SCHEMA[section]:
+                raise ConfigError(f"unknown setting '{key}' in [{section}]")
+            field, convert = SCHEMA[section][key]
+            try:
+                values[field] = convert(value)
+            except ValueError as exc:
+                raise ConfigError(f"[{section}] {key}: {exc}") from exc
+    return Settings(**values)
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -95,49 +123,3 @@ def _read(path: Path) -> dict[str, Any]:
         raise ConfigError(f"{path.name} is not valid TOML: {exc}") from exc
     except OSError as exc:
         raise ConfigError(f"cannot read {path}: {exc}") from exc
-
-
-def _reject_unknown(data: Mapping[str, Any]) -> None:
-    for section, content in data.items():
-        if section not in SCHEMA:
-            raise ConfigError(f"unknown section [{section}]")
-        if isinstance(content, dict):
-            for key in content:
-                if key not in SCHEMA[section]:
-                    raise ConfigError(f"unknown setting '{key}' in [{section}]")
-
-
-def _table(data: Mapping[str, Any], section: str) -> Mapping[str, Any]:
-    value = data.get(section, {})
-    if not isinstance(value, dict):
-        raise ConfigError(f"[{section}] must be a table")
-    return value
-
-
-def _string(table: Mapping[str, Any], section: str, key: str, default: str) -> str:
-    value = table.get(key, default)
-    if not isinstance(value, str):
-        raise ConfigError(f"[{section}] {key} must be a string")
-    return value
-
-
-def _number(table: Mapping[str, Any], section: str, key: str, default: float) -> float:
-    value = table.get(key, default)
-    # bool is a subclass of int, so it must be excluded explicitly.
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        raise ConfigError(f"[{section}] {key} must be a number")
-    try:
-        number = float(value)
-    except OverflowError:
-        number = math.inf
-    # TOML allows nan and inf, and a huge integer overflows float.
-    if not math.isfinite(number):
-        raise ConfigError(f"[{section}] {key} must be a finite number")
-    return number
-
-
-def _boolean(table: Mapping[str, Any], section: str, key: str, default: bool) -> bool:
-    value = table.get(key, default)
-    if not isinstance(value, bool):
-        raise ConfigError(f"[{section}] {key} must be true or false")
-    return value

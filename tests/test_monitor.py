@@ -9,7 +9,7 @@ from helpers import CALL_A, CALL_B, RecordingNotifier, ended, incoming, unrelate
 
 from teams_monitor import alerts
 from teams_monitor.engine import Engine
-from teams_monitor.models import Alert, Event, SignalName
+from teams_monitor.models import Alert, AlertKind, Event, SignalName
 from teams_monitor.monitor import Monitor
 from teams_monitor.parsing import LineParser
 from teams_monitor.rules.base import Rule
@@ -272,6 +272,78 @@ def test_run_forever_survives_a_failed_iteration_and_stops(clock, caplog) -> Non
     rig.monitor.run_forever(stop)
     assert len(calls) == 2
     assert "monitor iteration failed" in caplog.text
+
+
+class ScriptedStop:
+    """Stops after a set number of waits and records how long each one was."""
+
+    def __init__(self, iterations: int) -> None:
+        self.iterations = iterations
+        self.waits: list[float] = []
+
+    def is_set(self) -> bool:
+        return len(self.waits) >= self.iterations
+
+    def wait(self, timeout: float) -> None:
+        self.waits.append(timeout)
+
+
+def _always_fail() -> list[str]:
+    raise RuntimeError("bug")
+
+
+def test_repeated_failures_back_off_up_to_the_limit(rig: Rig, caplog) -> None:
+    rig.tailer.poll = _always_fail
+    stop = ScriptedStop(8)
+    rig.monitor.run_forever(stop)
+    assert stop.waits == [1, 2, 4, 8, 16, 30, 30, 30]
+
+
+def test_a_long_poll_interval_is_never_shortened_by_a_failure(clock, caplog) -> None:
+    rig = Rig(clock, poll_interval=100.0)
+    rig.tailer.poll = _always_fail
+    stop = ScriptedStop(2)
+    rig.monitor.run_forever(stop)
+    assert stop.waits == [100, 100]
+
+
+def test_repeated_failures_alert_once(rig: Rig, caplog) -> None:
+    rig.tailer.poll = _always_fail
+    rig.monitor.run_forever(ScriptedStop(4))
+    assert rig.notifier.alerts == []
+
+    rig.monitor.run_forever(ScriptedStop(20))
+    assert [alert.kind for alert in rig.notifier.alerts] == [AlertKind.MONITOR_ERROR]
+    assert rig.notifier.alerts[0].fields["failures"] == 5
+
+
+def test_a_success_resets_the_delay_and_the_alert(rig: Rig, caplog) -> None:
+    outcomes = iter([True] * 5 + [False] + [True] * 5)
+
+    def poll() -> list[str]:
+        if next(outcomes):
+            raise RuntimeError("bug")
+        return []
+
+    rig.tailer.poll = poll
+    stop = ScriptedStop(11)
+    rig.monitor.run_forever(stop)
+    assert stop.waits[5] == 0.5
+    assert stop.waits[6] == 1
+    assert len(rig.notifier.alerts) == 2
+
+
+def test_a_failing_notifier_does_not_stop_the_loop(clock, caplog) -> None:
+    class BrokenNotifier(RecordingNotifier):
+        def notify(self, alert: Alert) -> None:
+            raise RuntimeError("also broken")
+
+    rig = Rig(clock, notifier=BrokenNotifier())
+    rig.tailer.poll = _always_fail
+    stop = ScriptedStop(6)
+    rig.monitor.run_forever(stop)
+    assert len(stop.waits) == 6
+    assert "failed to send the monitor error alert" in caplog.text
 
 
 def test_run_forever_does_nothing_when_already_stopped(rig: Rig) -> None:

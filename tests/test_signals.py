@@ -23,12 +23,12 @@ from teams_monitor.signals import SignalMatcher
         (
             "call_ended",
             SignalName.CALL_ENDED,
-            {"call_id": "5287a96c-657d-4d03-a428-516cae679e0a", "remaining": "0"},
+            {"call_id": "5287a96c-657d-4d03-a428-516cae679e0a"},
         ),
         (
             "new_message",
             SignalName.UNREAD_BADGE,
-            {"unread": "1", "overlay_items": "1", "presence": "Available"},
+            {"unread": "1", "presence": "Available"},
         ),
         ("app_started", SignalName.APP_STARTED, {}),
         ("unread_count", SignalName.UNREAD_COUNT, {"unread": "0"}),
@@ -92,12 +92,6 @@ def test_presence_with_spaces_is_captured_whole() -> None:
     assert groups["presence"] == "Do Not Disturb"
 
 
-def test_remaining_count_is_captured() -> None:
-    assert (
-        event(_info(f"TeamsCallTracker: Call ended: {CALL_A} (remaining: 2)")).groups["remaining"]
-        == "2"
-    )
-
-
-def test_matcher_with_no_signals_matches_nothing() -> None:
-    assert SignalMatcher(()).match(parse(load_samples()["incoming_call"])) is None
+def test_call_ended_matches_with_calls_remaining() -> None:
+    found = event(_info(f"TeamsCallTracker: Call ended: {CALL_A} (remaining: 2)"))
+    assert found.groups["call_id"] == CALL_A

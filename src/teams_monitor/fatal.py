@@ -34,7 +34,7 @@ def _write_error_file(message: str) -> Path | None:
 
 def _show_message_box(text: str) -> None:
     try:
-        ctypes.windll.user32.MessageBoxW(  # type: ignore[attr-defined]
+        ctypes.windll.user32.MessageBoxW(
             None, text, "teams-monitor", _MB_ICONERROR | _MB_SETFOREGROUND
         )
     except (AttributeError, OSError):

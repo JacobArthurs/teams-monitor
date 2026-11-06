@@ -4,23 +4,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-DEFAULT_PATTERN = "MSTeams_*.log"
+LOG_PATTERN = "MSTeams_*.log"
 
 
 class LogLocator:
     """Teams starts a new file per launch and at about 2.1 MB, so the newest one is live."""
 
-    def __init__(self, directory: Path, pattern: str = DEFAULT_PATTERN) -> None:
+    def __init__(self, directory: Path) -> None:
         self._directory = directory
-        self._pattern = pattern
-
-    @property
-    def directory(self) -> Path:
-        return self._directory
 
     def existing(self) -> list[Path]:
         try:
-            return list(self._directory.glob(self._pattern))
+            return list(self._directory.glob(LOG_PATTERN))
         except OSError:
             return []
 
